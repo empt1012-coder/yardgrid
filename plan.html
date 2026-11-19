@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plan a bed · Yardgrid</title>
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body class="plan-page">
+  <header class="site-header">
+    <a class="logo" href="index.html">Yardgrid</a>
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a href="plan.html">Planner</a>
+      <a href="guides/raised-bed.html">Guides</a>
+      <a href="about.html">About</a>
+    </nav>
+  </header>
+  <div class="plan-app">
+    <aside class="library" id="library">
+      <div class="library-head">
+        <h2>Plants</h2>
+        <button type="button" id="plantsClose" class="plants-close">Close</button>
+      </div>
+      <div id="stampTray" hidden></div>
+      <label>Search <input id="filter" type="search" placeholder="Carrot, herb…"></label>
+      <div id="plantList"></div>
+    </aside>
+    <main class="board-wrap">
+      <div class="toolbar">
+        <div class="row mode-row">
+          <button type="button" id="modeGrid" class="on">Grid plan</button>
+          <button type="button" id="modePlace">Placement</button>
+        </div>
+        <div class="row">
+          <label>Garden name <input id="gardenName" type="text" maxlength="60"></label>
+          <label>Last spring frost <input id="frost" type="date"></label>
+        </div>
+        <div class="row" id="bedRow">
+          <label>Bed width (ft) <input id="bedW" type="number" min="1" max="20" value="4"></label>
+          <label>Bed length (ft) <input id="bedH" type="number" min="1" max="20" value="8"></label>
+          <button type="button" class="primary" id="addBed">Add bed</button>
+        </div>
+        <div id="placeBar" class="place-bar" hidden>
+          <div class="row">
+            <label class="file">Add pictures<input id="stampFile" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" multiple></label>
+            <button type="button" id="saveImage">Save image</button>
+          </div>
+          <div class="row">
+            <button type="button" id="pieceDup">Duplicate</button>
+            <button type="button" id="pieceFlip">Flip</button>
+            <button type="button" id="pieceForward">Forward</button>
+            <button type="button" id="pieceBack">Back</button>
+            <button type="button" id="pieceDelete">Delete</button>
+          </div>
+          <p class="muted">PNG keeps a clear background. Drag a picture to move it. On a phone, select it and pinch with two fingers to resize and turn it. On a wide screen, use the handles.</p>
+        </div>
+        <div class="photo-panel" id="photoPanel">
+          <button type="button" class="photo-toggle" id="photoToggle" aria-expanded="false" aria-controls="photoBody">Yard photo</button>
+          <div class="photo-body" id="photoBody">
+        <div class="row">
+          <button type="button" id="toolPan" class="on" title="Drag empty board to move the view"><span class="wide">Move view</span><span class="narrow">Pan</span></button>
+          <button type="button" id="toolPhoto" title="Drag the yard photo"><span class="wide">Move photo</span><span class="narrow">Photo</span></button>
+          <button type="button" id="toolScale" title="Drag a line across a known length"><span class="wide">Set scale</span><span class="narrow">Scale</span></button>
+          <label class="file" title="Upload a JPG or PNG"><span class="wide">Upload photo</span><span class="narrow">Upload</span><input id="photoFile" type="file" accept="image/jpeg,image/png,image/heic,image/heif,.jpg,.jpeg,.png,.heic,.heif"></label>
+          <label class="file" title="Use the camera"><span class="wide">Take photo</span><span class="narrow">Camera</span><input id="cameraFile" type="file" accept="image/*" capture="environment"></label>
+          <button type="button" id="removePhoto" title="Remove the yard photo"><span class="wide">Remove photo</span><span class="narrow">Remove</span></button>
+        </div>
+        <div class="row">
+          <label>Photo opacity <input id="opacity" type="range" min="0.15" max="1" step="0.01" value="0.62"></label>
+          <label>Photo size (ft wide) <input id="photoSize" type="range" min="4" max="80" step="0.5" value="18"></label>
+          <label class="grid-toggle">Grid <input id="gridOn" type="checkbox" checked></label>
+        </div>
+        <div id="scaleBox" class="scale-box" hidden>
+          <label>Real length of that line (ft) <input id="scaleFeet" type="number" min="0.5" step="0.1"></label>
+          <button type="button" class="primary" id="scaleApply">Apply scale</button>
+          <button type="button" id="scaleCancel">Cancel</button>
+        </div>
+          </div>
+        </div>
+      </div>
+      <div id="viewport" class="grid-on"></div>
+      <p id="hint" class="hint"></p>
+    </main>
+    <aside class="side">
+      <div class="tabs">
+        <button type="button" class="on" data-tab="panel-plan">Plant</button>
+        <button type="button" data-tab="panel-dates">Dates</button>
+        <button type="button" data-tab="panel-list">List</button>
+      </div>
+      <div id="panel-plan" class="panel on">
+        <div id="detail"></div>
+        <div class="row" style="margin-top:8px">
+          <button type="button" id="removePlant">Remove plant</button>
+          <button type="button" id="clearBed">Clear bed</button>
+        </div>
+        <div id="notes"></div>
+      </div>
+      <div id="panel-dates" class="panel">
+        <p class="muted">Dates are counted from your frost date using extension windows. A range means the source gave a range.</p>
+        <div id="calendar"></div>
+      </div>
+      <div id="panel-list" class="panel">
+        <div id="shop"></div>
+      </div>
+      <h2 style="margin-top:14px">Save</h2>
+      <div class="row">
+        <button type="button" class="primary" id="saveBtn">Save</button>
+        <button type="button" id="exportBtn">Export</button>
+        <label class="file">Import<input id="importFile" type="file" accept="application/json,.json"></label>
+        <button type="button" id="printBtn">Print</button>
+      </div>
+      <label style="margin-top:8px">Saved in this browser
+        <select id="saveList"></select>
+      </label>
+      <button type="button" id="loadBtn">Load selected</button>
+    </aside>
+  </div>
+  <button type="button" id="plantsToggle" class="plants-toggle" aria-expanded="false" aria-controls="library">Plants</button>
+  <div id="printSheet"></div>
+  <script src="js/plants.js"></script>
+  <script src="js/logic.js"></script>
+  <script src="js/planner.js"></script>
+</body>
+</html>
