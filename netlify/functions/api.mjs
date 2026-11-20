@@ -207,7 +207,7 @@ async function checkout(req, user) {
   const key = process.env.STRIPE_SECRET_KEY || "";
   const body = await req.json().catch(function () { return {}; });
   const price = body.plan === "year" ? process.env.STRIPE_PRICE_YEARLY : process.env.STRIPE_PRICE_MONTHLY;
-  if (!key || !price || key.indexOf("sk_test_") !== 0) {
+  if (!key || !price || (key.indexOf("sk_test_") !== 0 && key.indexOf("rk_test_") !== 0)) {
     return json({ error: "Plus checkout is not turned on yet. It stays in Stripe test mode until Emilio switches it on." }, 503);
   }
   const account = await accountOf(user.id);
@@ -236,7 +236,7 @@ async function checkout(req, user) {
 async function portal(req, user) {
   const key = process.env.STRIPE_SECRET_KEY || "";
   const account = await accountOf(user.id);
-  if (!key || key.indexOf("sk_test_") !== 0 || !account.stripeCustomerId) {
+  if (!key || (key.indexOf("sk_test_") !== 0 && key.indexOf("rk_test_") !== 0) || !account.stripeCustomerId) {
     return json({ error: "Subscription management is not available yet." }, 503);
   }
   const params = new URLSearchParams();
