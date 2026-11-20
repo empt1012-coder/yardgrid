@@ -171,6 +171,36 @@
     } catch (e) { return false; }
   }
 
+  function zoneRecord() {
+    try { return JSON.parse(localStorage.getItem('yardgrid-zone') || 'null'); }
+    catch (e) { return null; }
+  }
+  function zoneBlurb() {
+    const rec = zoneRecord();
+    const link = '<a href="charts/planting-calendar.html">Planting calendar by zone</a>';
+    if (!rec || !rec.zone) return '<p class="muted">' + link + '</p>';
+    return '<p class="muted">Zone ' + esc(rec.zone) + (rec.zip ? ', ZIP ' + esc(rec.zip) : '') + '. ' + link + '</p>';
+  }
+  function applyChartQuery() {
+    const q = new URLSearchParams(location.search);
+    const frost = q.get('frost') || '';
+    const zone = q.get('zone') || '';
+    const plant = q.get('plant') || '';
+    let changed = false;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(frost)) { state.frost = frost; changed = true; }
+    else if (!state.frost) {
+      const rec = zoneRecord();
+      if (rec && /^\d{4}-\d{2}-\d{2}$/.test(rec.frost || '')) { state.frost = rec.frost; changed = true; }
+    }
+    if (plant && byId[plant]) { state.armed = plant; changed = true; }
+    if (zone || frost) {
+      const rec = zoneRecord() || {};
+      if (zone) rec.zone = zone;
+      if (frost) rec.frost = frost;
+      try { localStorage.setItem('yardgrid-zone', JSON.stringify(rec)); } catch (e) {}
+    }
+    return changed;
+  }
   function namedSaves() {
     try { return JSON.parse(localStorage.getItem('yardgrid-saves') || '[]'); }
     catch (e) { return []; }
@@ -395,17 +425,25 @@
     const info = plant ? byId[plant.plantId] : (state.armed ? byId[state.armed] : null);
     let detail = '';
     if (info) {
-      detail = '<div class="card"><strong>' + info.emoji + ' ' + esc(info.name) + '</strong><p>' + esc(info.method) + '</p><p>' + esc(info.gridNote) + '</p><p>Days: ' + esc(info.days) + '. ' + esc(info.daysNote) + '</p><p>' + esc(info.sun) + '</p></div>';
+      const one = Logic.calendarRows([{ plantId: info.id }], byId, state.frost)[0];
+      let when = '';
+      if (one && state.frost) {
+        if (one.indoor) when += '<p><strong>Start indoors:</strong> ' + esc(one.indoor) + '</p>';
+        if (one.transplant) when += '<p><strong>Set out:</strong> ' + esc(one.transplant) + '</p>';
+        if (one.direct) when += '<p><strong>Direct sow:</strong> ' + esc(one.direct) + '</p>';
+      }
+      detail = '<div class="card"><strong>' + info.emoji + ' ' + esc(info.name) + '</strong><p>' + esc(info.method) + '</p><p>' + esc(info.gridNote) + '</p><p>Days: ' + esc(info.days) + '. ' + esc(info.daysNote) + '</p><p>' + esc(info.sun) + '</p>' + when + '</div>';
     }
     $('detail').innerHTML = detail;
 
     const rows = Logic.calendarRows(state.plants, byId, state.frost);
+    const zoneLine = zoneBlurb();
     if (!state.frost) {
-      $('calendar').innerHTML = '<p class="muted">Enter your average last spring frost date. The calendar uses that day. It is an average, not a promise. Soil temperature is a better signal when you have it. <a href="https://www.almanac.com/gardening/frostdates" target="_blank" rel="noopener">Look up a frost date</a>.</p>';
+      $('calendar').innerHTML = zoneLine + '<p class="muted">Enter your average last spring frost date. The calendar uses that day. It is an average, not a promise. Soil temperature is a better signal when you have it. <a href="https://www.almanac.com/gardening/frostdates" target="_blank" rel="noopener">Look up a frost date</a>.</p>';
     } else if (!rows.length) {
-      $('calendar').innerHTML = '<p class="muted">Add plants to the beds to see dates.</p>';
+      $('calendar').innerHTML = zoneLine + '<p class="muted">Add plants to the beds to see dates.</p>';
     } else {
-      $('calendar').innerHTML = rows.map(function (row) {
+      $('calendar').innerHTML = zoneLine + rows.map(function (row) {
         const bits = [];
         if (row.indoor) bits.push('<div><strong>Start indoors:</strong> ' + esc(row.indoor) + '<br><span class="muted">' + esc(row.indoorNote) + '</span></div>');
         if (row.transplant) bits.push('<div><strong>Set out:</strong> ' + esc(row.transplant) + '<br><span class="muted">' + esc(row.transplantNote) + '</span></div>');
@@ -1391,6 +1429,7 @@
     const demo = /(?:\?|&)demo=1(?:&|$)/.test(location.search);
     if (demo) { loadDemo(); return; }
     const had = loadCurrent();
+    const chartTouch = applyChartQuery();
     const jobs = [];
     if (had && state.photo) {
       jobs.push(idbGet(state.id).then(function (blob) {
@@ -1401,6 +1440,7 @@
     if (had) jobs.push(loadStampBlobs());
     Promise.all(jobs).then(function () {
       render();
+      if (chartTouch) persist();
       if (!state.beds.length && state.mode !== 'place') setHint('Add a bed, then tap a plant and tap a square. On a phone you can also drag the plant.');
     });
   }

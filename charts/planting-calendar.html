@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Planting calendar by zone · Bloom &amp; Bed Garden</title>
+  <meta name="description" content="Planting calendar by USDA zone or ZIP code. Indoor, transplant, and direct-sow dates from extension guides and NOAA frost dates.">
+  <link rel="icon" href="../images/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/site.css">
+  <script src="../js/config.js"></script>
+  <script>document.head.appendChild(Object.assign(document.createElement("link"), { rel: "canonical", href: SITE_URL + "/charts/planting-calendar.html" }));</script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="logo" href="../index.html"><img src="../images/logo.svg" alt="Bloom &amp; Bed Garden"></a>
+    <nav class="nav">
+      <a href="../index.html">Home</a>
+      <a href="../plan.html">Planner</a>
+      <a href="planting-calendar.html">Charts</a>
+      <a href="../guides/raised-bed.html">Guides</a>
+      <a href="../about.html">About</a>
+    </nav>
+  </header>
+  <main class="wrap">
+    <h1>Planting calendar by zone</h1>
+    <p class="lede">Pick a USDA hardiness zone, or type a ZIP code. The bars are extension-guide windows counted from an average last 32°F date.</p>
+    <nav class="chart-nav">
+      <a href="planting-calendar.html">Planting calendar</a>
+      <a href="bloom.html">What’s in bloom</a>
+      <a href="cut-flowers.html">Cut flowers</a>
+      <a href="monthly-tasks.html">Monthly tasks</a>
+      <a href="companions.html">Companions</a>
+      <a href="checklist.html">Printable checklist</a>
+    </nav>
+    <div class="row">
+      <label>USDA zone <select id="zone"></select></label>
+      <label>ZIP code <input id="zip" inputmode="numeric" maxlength="5" placeholder="10001"></label>
+      <button type="button" class="btn" id="lookup">Look up ZIP</button>
+    </div>
+    <p id="status" class="note"></p>
+    <p class="muted">Dates are averages. Local weather varies, and soil temperature is a better planting signal when you have it. A zone is a winter-low band, not a frost date. ZIP frost dates use the nearest NOAA station within 80 km. A zone with no ZIP uses the median of stations matched to that zone.</p>
+    <div id="chart"></div>
+    <p><a class="btn" id="use" href="../plan.html">Use these dates in the planner</a> <a class="btn secondary" id="printLink" href="checklist.html">Printable checklist</a></p>
+    <p class="muted">Sources: <a href="https://prism.oregonstate.edu/phzm">2023 USDA zone ZIP listings</a> (PRISM Group, Oregon State University), <a href="https://www.ncei.noaa.gov/products/land-based-station/us-climate-normals">NOAA 1991–2020 Climate Normals</a>, and the extension windows in <a href="../SOURCES.md">SOURCES.md</a>. Census 2024 ZCTA points place each ZIP.</p>
+  </main>
+  <footer class="site-footer">
+    <span>Bloom &amp; Bed Garden</span>
+    <nav class="nav">
+      <a href="../privacy.html">Privacy</a>
+      <a href="../contact.html">Contact</a>
+      <a href="#">Social</a>
+    </nav>
+  </footer>
+  <script src="../data/charts/lookup.js"></script>
+  <script src="../js/plants.js"></script>
+  <script src="../js/logic.js"></script>
+  <script src="../js/charts.js"></script>
+  <script>
+    (function () {
+      var year = new Date().getFullYear();
+      var lookup = window.YardLookup;
+      var zoneEl = document.getElementById('zone');
+      var zipEl = document.getElementById('zip');
+      var status = document.getElementById('status');
+      var chart = document.getElementById('chart');
+      var place = null;
+      YardCharts.zones(lookup).forEach(function (z) {
+        var opt = document.createElement('option');
+        opt.value = z;
+        opt.textContent = z;
+        zoneEl.appendChild(opt);
+      });
+      function remember() {
+        if (!place || !place.last) return;
+        var frost = YardCharts.iso(place.last, year);
+        var rec = {
+          zone: place.zone, zip: place.zip || '', frost: frost,
+          first: YardCharts.iso(place.first, year),
+          station: place.station || '', stationName: place.stationName || '',
+          km: place.km == null ? '' : place.km, basis: place.basis, n: place.n || 0
+        };
+        try { localStorage.setItem('yardgrid-zone', JSON.stringify(rec)); } catch (e) {}
+        document.getElementById('use').href = '../plan.html?zone=' + encodeURIComponent(place.zone) + '&frost=' + encodeURIComponent(frost);
+        document.getElementById('printLink').href = 'checklist.html?zone=' + encodeURIComponent(place.zone) + (place.zip ? '&zip=' + encodeURIComponent(place.zip) : '');
+      }
+      function draw() {
+        status.textContent = YardCharts.placeText(place);
+        var frost = place && place.last ? YardCharts.iso(place.last, year) : '';
+        chart.innerHTML = frost ? YardCharts.plantingHtml(YardPlants.list, YardLogic, frost, place.first) : '<p class="muted">No frost date for this choice, so the month bars stay blank.</p>';
+        remember();
+      }
+      function fromZone() {
+        place = YardCharts.zoneMedian(lookup, zoneEl.value) || { zone: zoneEl.value, basis: 'zone-median' };
+        draw();
+      }
+      zoneEl.addEventListener('change', function () { zipEl.value = ''; fromZone(); });
+      document.getElementById('lookup').addEventListener('click', function () {
+        var zip = zipEl.value.replace(/\D/g, '');
+        if (zip.length === 4) zip = '0' + zip;
+        zipEl.value = zip;
+        var found = YardCharts.zipPlace(lookup, zip);
+        if (!found) { status.textContent = 'That ZIP is not in the 2023 USDA ZIP listing used here.'; return; }
+        place = found;
+        zoneEl.value = found.zone;
+        draw();
+      });
+      var saved = null;
+      try { saved = JSON.parse(localStorage.getItem('yardgrid-zone') || 'null'); } catch (e) {}
+      var q = new URLSearchParams(location.search);
+      if (q.get('zip')) { zipEl.value = q.get('zip'); document.getElementById('lookup').click(); }
+      else if (q.get('zone') && YardCharts.zones(lookup).indexOf(q.get('zone')) >= 0) { zoneEl.value = q.get('zone'); fromZone(); }
+      else if (saved && saved.zip) { zipEl.value = saved.zip; document.getElementById('lookup').click(); }
+      else if (saved && saved.zone) { zoneEl.value = saved.zone; fromZone(); }
+      else fromZone();
+    })();
+  </script>
+</body>
+</html>

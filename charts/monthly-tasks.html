@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monthly garden to-do list · Bloom &amp; Bed Garden</title>
+  <meta name="description" content="Monthly garden to-do list for the upper Midwest, from University of Minnesota Extension.">
+  <link rel="icon" href="../images/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/site.css">
+  <script src="../js/config.js"></script>
+  <script>document.head.appendChild(Object.assign(document.createElement("link"), { rel: "canonical", href: SITE_URL + "/charts/monthly-tasks.html" }));</script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="logo" href="../index.html"><img src="../images/logo.svg" alt="Bloom &amp; Bed Garden"></a>
+    <nav class="nav">
+      <a href="../index.html">Home</a>
+      <a href="../plan.html">Planner</a>
+      <a href="planting-calendar.html">Charts</a>
+      <a href="../about.html">About</a>
+    </nav>
+  </header>
+  <main class="wrap">
+    <h1>Monthly garden to-do list</h1>
+    <p class="lede">Upper Midwest only. University of Minnesota Extension wrote this calendar for that region. It is not adjusted to a USDA zone, because the page is not split by zone.</p>
+    <nav class="chart-nav">
+      <a href="planting-calendar.html">Planting calendar</a>
+      <a href="bloom.html">What’s in bloom</a>
+      <a href="monthly-tasks.html">Monthly tasks</a>
+      <a href="companions.html">Companions</a>
+    </nav>
+    <table id="tasks"></table>
+    <p class="muted">Source: <a href="https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/upper-midwest-home-garden-care-calendar">Upper Midwest home garden care schedule</a>, University of Minnesota Extension, reviewed in 2026. A southern month-by-month list from an extension page was not added. Planting dates that do follow your zone are on the <a href="planting-calendar.html">planting calendar</a>.</p>
+  </main>
+  <footer class="site-footer">
+    <span>Bloom &amp; Bed Garden</span>
+    <nav class="nav"><a href="../privacy.html">Privacy</a><a href="../contact.html">Contact</a></nav>
+  </footer>
+  <script src="../js/charts.js"></script>
+  <script src="../js/chart-facts.js"></script>
+  <script>
+    document.getElementById('tasks').innerHTML = '<thead><tr><th>When</th><th>Task</th></tr></thead><tbody>' +
+      YardFacts.tasks.map(function (row) {
+        return '<tr><td>' + YardCharts.esc(row[0]) + '</td><td>' + YardCharts.esc(row[1]) + '</td></tr>';
+      }).join('') + '</tbody>';
+  </script>
+</body>
+</html>

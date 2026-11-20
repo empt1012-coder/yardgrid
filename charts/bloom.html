@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>When do flowers bloom · Bloom &amp; Bed Garden</title>
+  <meta name="description" content="When do flowers bloom? Bloom months for common garden flowers, only where an extension page names the season.">
+  <link rel="icon" href="../images/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/site.css">
+  <script src="../js/config.js"></script>
+  <script>document.head.appendChild(Object.assign(document.createElement("link"), { rel: "canonical", href: SITE_URL + "/charts/bloom.html" }));</script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="logo" href="../index.html"><img src="../images/logo.svg" alt="Bloom &amp; Bed Garden"></a>
+    <nav class="nav">
+      <a href="../index.html">Home</a>
+      <a href="../plan.html">Planner</a>
+      <a href="planting-calendar.html">Charts</a>
+      <a href="../guides/raised-bed.html">Guides</a>
+      <a href="../about.html">About</a>
+    </nav>
+  </header>
+  <main class="wrap">
+    <h1>When do flowers bloom</h1>
+    <p class="lede">Usual bloom time for flowers an extension page actually dates. If a page only says “summer” or “fall,” that word is kept. Months are not filled in.</p>
+    <nav class="chart-nav">
+      <a href="planting-calendar.html">Planting calendar</a>
+      <a href="bloom.html">What’s in bloom</a>
+      <a href="cut-flowers.html">Cut flowers</a>
+      <a href="monthly-tasks.html">Monthly tasks</a>
+      <a href="companions.html">Companions</a>
+    </nav>
+    <label>Your zone, for rows that name one <select id="zone"></select></label>
+    <p class="muted" id="filterNote"></p>
+    <div id="rows"></div>
+    <p class="muted">Left out on purpose: rose, coneflower, iris, sunflower, lavender, sweet pea, and the other library flowers. No extension page used here gave them a bloom month. Hostas are grown mainly for foliage on the Clemson perennial page, which does not date their flowers. <a href="../plan.html">Plan a bed</a>.</p>
+  </main>
+  <footer class="site-footer">
+    <span>Bloom &amp; Bed Garden</span>
+    <nav class="nav"><a href="../privacy.html">Privacy</a><a href="../contact.html">Contact</a></nav>
+  </footer>
+  <script src="../js/charts.js"></script>
+  <script src="../js/chart-facts.js"></script>
+  <script>
+    (function () {
+      var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      var zoneEl = document.getElementById('zone');
+      var ranks = [];
+      for (var n = 1; n <= 13; n++) { ranks.push(n + 'a'); ranks.push(n + 'b'); }
+      ranks.forEach(function (z) {
+        var o = document.createElement('option');
+        o.value = z; o.textContent = z;
+        zoneEl.appendChild(o);
+      });
+      zoneEl.value = '7b';
+      function draw() {
+        var zone = zoneEl.value;
+        var named = 0, shown = 0;
+        document.getElementById('rows').innerHTML = YardFacts.blooms.map(function (row) {
+          var hasZone = row.zoneMin && row.zoneMax;
+          if (hasZone) named++;
+          var fit = !hasZone || YardCharts.zoneIn(zone, row.zoneMin, row.zoneMax);
+          if (hasZone && !fit) return '';
+          if (hasZone) shown++;
+          var cells = months.map(function (m, i) {
+            return '<span class="' + (row.months.indexOf(i + 1) >= 0 ? 'on' : '') + '">' + m + '</span>';
+          }).join('');
+          return '<article class="card"><h2>' + YardCharts.esc(row.name) + '</h2><p>' + YardCharts.esc(row.phrase) + '</p>' +
+            (row.months.length ? '<div class="mgrid bloom-grid">' + cells + '</div>' : '') +
+            '<p class="muted">' + YardCharts.esc(row.region) + '. <a href="' + row.href + '">' + YardCharts.esc(row.source) + '</a></p></article>';
+        }).join('');
+        document.getElementById('filterNote').textContent = shown + ' of ' + named + ' zone-tagged rows match zone ' + zone + '. Rows with no zone in the source stay visible.';
+      }
+      zoneEl.addEventListener('change', draw);
+      draw();
+    })();
+  </script>
+</body>
+</html>

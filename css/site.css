@@ -98,6 +98,9 @@ button.on { outline: 2px solid var(--green); }
 .cell.filled { background: rgba(229, 242, 232, 0.78); border-style: solid; }
 .cell.selected { outline: 2px solid var(--green); z-index: 2; }
 .hint { margin: 8px 0 0; font-size: 0.85rem; color: var(--muted); }
+.account-box { margin-top: 12px; }
+.account-box summary { cursor: pointer; font-weight: 700; margin-bottom: 8px; }
+.price { font-size: 1.4rem; margin: 0 0 8px; }
 .note { background: #fff6e8; border-radius: 12px; padding: 8px 10px; margin: 8px 0; font-size: 0.88rem; }
 .note.caution { background: #fde8d8; }
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
@@ -136,6 +139,26 @@ label.file { display: inline-flex; align-items: center; justify-content: center;
 .library-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .library-head h2 { margin: 0 0 8px; }
 .prose a, .guide-list a, .wrap { overflow-wrap: anywhere; }
+.chart-nav { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 16px; }
+.chart-nav a { background: var(--card); border-radius: 999px; padding: 6px 10px; text-decoration: none; border: 1px solid var(--line); }
+.mgrid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; min-width: 520px; font-size: 0.72rem; color: var(--muted); }
+.bloom-grid { min-width: 0; margin: 8px 0; }
+.bloom-grid span { text-align: center; border-radius: 6px; padding: 4px 0; background: #efe8dc; }
+.bloom-grid span.on { background: var(--green); color: white; }
+.track-scroll { overflow-x: auto; }
+.track { position: relative; height: 22px; min-width: 520px; background: #efe8dc; border-radius: 8px; }
+.bar { position: absolute; top: 4px; height: 14px; border-radius: 4px; }
+.frost-line { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--warn); }
+.legend { font-size: 0.85rem; }
+.legend i { display: inline-block; width: 14px; height: 10px; border-radius: 3px; margin: 0 4px 0 10px; }
+.legend i.line { width: 2px; height: 12px; background: var(--warn); }
+.chart-row { margin: 0 0 12px; }
+.chart-name { font-weight: 650; }
+@media print {
+  .site-header, .site-footer, .no-print, .chart-nav { display: none !important; }
+  body { background: white; }
+  .wrap { max-width: none; padding: 0; }
+}
 @media (max-width: 700px) {
   .wide { display: none; }
   .narrow { display: inline; }

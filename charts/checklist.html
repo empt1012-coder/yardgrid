@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Seasonal checklist by zone · Bloom &amp; Bed Garden</title>
+  <meta name="description" content="Free one-page seasonal garden checklist for a USDA zone, with frost dates and extension timing.">
+  <link rel="icon" href="../images/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/site.css">
+  <script src="../js/config.js"></script>
+  <script>document.head.appendChild(Object.assign(document.createElement("link"), { rel: "canonical", href: SITE_URL + "/charts/checklist.html" }));</script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="logo" href="../index.html"><img src="../images/logo.svg" alt="Bloom &amp; Bed Garden"></a>
+    <nav class="nav">
+      <a href="../index.html">Home</a>
+      <a href="../plan.html">Planner</a>
+      <a href="planting-calendar.html">Charts</a>
+      <a href="../about.html">About</a>
+    </nav>
+  </header>
+  <main class="wrap prose" id="sheet">
+    <h1>Seasonal checklist</h1>
+    <p id="lead"></p>
+    <h2>Planting windows for this frost date</h2>
+    <ul>
+      <li>Hardy crops (peas, spinach, lettuce, radishes): as early as 2 to 4 weeks before the last spring frost.</li>
+      <li>Semi-hardy crops (beets, carrots, chard): as early as 0 to 2 weeks before.</li>
+      <li>Tender crops (beans, cucumbers, summer squash): sow around the frost date.</li>
+      <li>Very tender crops (tomatoes, peppers, eggplant): typically 2 or more weeks after.</li>
+    </ul>
+    <p>Those groups are from Colorado State University Extension GardenNotes #720. The full crop-by-crop chart is the <a href="planting-calendar.html">planting calendar</a>.</p>
+    <h2>Upper Midwest tasks</h2>
+    <p>From University of Minnesota Extension, “Upper Midwest home garden care schedule.” These months are for that region. They are not rewritten for other zones.</p>
+    <ul>
+      <li>March–April: cut back perennials. Mid-March to early May: start summer vegetable seeds indoors.</li>
+      <li>April: cool-season vegetables. Last week of April: carrots, beets, potatoes.</li>
+      <li>Mid to late May or the first week of June: sweet corn, beans, tomatoes, peppers.</li>
+      <li>Last week of May through June: summer vegetables, annuals, and summer bulbs.</li>
+      <li>Mid-July to mid-August: fall vegetables. Late July to early August: divide bearded iris.</li>
+      <li>Late August–September: divide peonies. September to mid-November: plant spring bulbs.</li>
+      <li>October–November: clean up the vegetable garden.</li>
+    </ul>
+    <p class="muted">Averages, not a forecast. Soil temperature still matters. <a href="https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/upper-midwest-home-garden-care-calendar">UMN calendar</a>. <a href="https://extension.colostate.edu/resource/vegetable-planting-guide/">CSU GardenNotes #720</a>.</p>
+    <p class="no-print"><button type="button" class="btn" id="print">Print this page</button></p>
+  </main>
+  <footer class="site-footer no-print">
+    <span>Bloom &amp; Bed Garden</span>
+    <nav class="nav">
+      <a href="../privacy.html">Privacy</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+  </footer>
+  <script src="../data/charts/lookup.js"></script>
+  <script src="../js/charts.js"></script>
+  <script>
+    (function () {
+      var q = new URLSearchParams(location.search);
+      var year = new Date().getFullYear();
+      var zip = (q.get('zip') || '').replace(/\D/g, '');
+      var place = zip ? YardCharts.zipPlace(YardLookup, zip) : null;
+      if (!place) {
+        var zone = q.get('zone') || '6b';
+        place = YardCharts.zoneMedian(YardLookup, zone) || { zone: zone, basis: 'zone-median' };
+      }
+      document.getElementById('lead').textContent = 'Zone ' + place.zone + (place.zip ? ', ZIP ' + place.zip : '') + '. ' + YardCharts.placeText(place) + (place.last ? ' Counted for ' + year + ' as ' + YardCharts.iso(place.last, year) + '.' : '');
+      document.title = 'Seasonal checklist zone ' + place.zone + ' · Bloom & Bed Garden';
+      document.getElementById('print').addEventListener('click', function () { window.print(); });
+    })();
+  </script>
+</body>
+</html>

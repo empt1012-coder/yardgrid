@@ -62,3 +62,52 @@ No other companion pairs are shown. Charts that only say “likes” or “disli
 
 - Old Farmer’s Almanac frost dates: https://www.almanac.com/gardening/frostdates
 - USDA plant hardiness zones (a zone, not a frost date): https://planthardiness.ars.usda.gov/
+
+## Seasonal charts (19 November 2026)
+
+Planting dates on the chart pages use the same frost offsets already cited above (CSU GardenNotes #720, the CSU mountain-county note, and UMN). The day they are counted from is not invented.
+
+- USDA Plant Hardiness Zone Map, 2023, ZIP code listings prepared by the PRISM Group at Oregon State University. Mean annual extreme minimum temperature, 1991–2020.
+  https://prism.oregonstate.edu/phzm
+  Files used: `phzm_us_zipcode_2023.csv`, `phzm_ak_zipcode_2023.csv`, `phzm_hi_zipcode_2023.csv`, `phzm_pr_zipcode_2023.csv`.
+  A zone is not a frost date.
+
+- NOAA National Centers for Environmental Information. U.S. Climate Normals, 1991–2020, annual/seasonal.
+  https://www.ncei.noaa.gov/products/land-based-station/us-climate-normals
+  Last spring 32°F at 50% probability: `ANN-TMIN-PRBLST-T32FP50`. First fall 32°F at 50% probability: `ANN-TMIN-PRBFST-T32FP50`.
+  Each ZIP that has a Census 2024 ZCTA internal point is matched to the nearest of those stations within 80 km. The zone stored on a station is the 2023 zone of the nearest listed ZIP within 80 km. It is not a USDA point query. A zone chosen with no ZIP uses the median of those station dates. That median is calculated here. NOAA does not publish one frost date per zone.
+
+- U.S. Census Bureau, 2024 Gazetteer, ZIP Code Tabulation Areas. Internal point latitude and longitude only.
+  https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2024_Gazetteer/2024_Gaz_zcta_national.zip
+
+### Bloom and cut flowers
+
+- University of Minnesota Extension. “Daylilies.” Peak bloom in Minnesota is July to early August.
+  https://extension.umn.edu/gardening-minnesota/daylilies
+
+- Clemson Cooperative Extension HGIC. “Daylily.” In bloom from late spring until autumn. Midseason is May on the coast and June in the mountains.
+  https://hgic.clemson.edu/factsheet/daylily/
+
+- Clemson Cooperative Extension HGIC 1170. “Peonies.” Mid- to late spring, as early as March or as late as May.
+  https://hgic.clemson.edu/factsheet/peonies/
+
+- Clemson Cooperative Extension HGIC. “Summer- and Fall-Flowering Bulbs.” Dahlias normally bloom from midsummer until frost. Lilies are called great cut flowers and color most of the summer.
+  https://hgic.clemson.edu/factsheet/summer-and-fall-flowering-bulbs/
+
+- Penn State Extension. “Summer and Fall Blooming Bulbs.” Updated February 18, 2026. Dahlias bloom in late summer and early fall. Tulips are named as spring-blooming bulbs planted in the fall.
+  https://extension.psu.edu/summer-and-fall-blooming-bulbs/
+
+- Clemson Cooperative Extension HGIC 1161. “Chrysanthemums.” Updated November 13, 2025. Bloom season is fall until freezing. Hardiness is given as USDA zones 5a to 9b.
+  https://hgic.clemson.edu/factsheet/chrysanthemums-how-to-grow-garden-mums-in-south-carolina/
+
+- Clemson Cooperative Extension HGIC 1067. “Hydrangea Care in South Carolina.” Updated October 31, 2025. Smooth hydrangea blooms late June through September. Panicle ‘Tardiva’ is August to September. Panicle ‘Praecox’ is June. Bigleaf hydrangea is described as summer color.
+  https://hgic.clemson.edu/factsheet/hydrangea-care-in-south-carolina/
+
+Flowers with no bloom month on these pages are not on the chart.
+
+### Monthly tasks
+
+- University of Minnesota Extension. “Upper Midwest home garden care schedule.” Reviewed in 2026. The months are for the upper Midwest. They are not rewritten by zone.
+  https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/upper-midwest-home-garden-care-calendar
+
+No sourced “grows well together” companion pair was added. The marigold and bean notes above are the whole companion chart.
