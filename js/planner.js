@@ -44,7 +44,8 @@
       id: uid(), name: 'My garden', frost: '', ppm: 42, panX: 24, panY: 24,
       grid: true, opacity: 0.62, photo: null, beds: [], plants: [],
       tool: 'pan', armed: null, selectedBed: null, selectedPlant: null,
-      mode: 'grid', pieces: [], stamps: [], selectedPiece: null, demo: false
+      mode: 'grid', pieces: [], stamps: [], selectedPiece: null, demo: false,
+      viewOnly: false, cloudId: ''
     };
   }
 
@@ -153,7 +154,7 @@
   }
 
   function persist() {
-    if (state.demo) return;
+    if (state.demo || state.viewOnly) return;
     const data = JSON.parse(JSON.stringify(state));
     delete data.demo;
     try { localStorage.setItem('yardgrid-current', JSON.stringify(data)); }
@@ -415,9 +416,7 @@
       $('shop').innerHTML = '<p class="muted">The shopping list follows the grid plan.</p>';
       $('notes').innerHTML = '';
       const saves = namedSaves();
-      $('saveList').innerHTML = saves.map(function (s, i) {
-        return '<option value="' + i + '">' + esc(s.name) + '</option>';
-      }).join('');
+      $('saveList').innerHTML = saveOptions(saves);
       renderPrint();
       return;
     }
@@ -471,9 +470,7 @@
     $('notes').innerHTML = notes.join('') || '<p class="muted">Neighbor notes show up only for pairs with a source. Most old companion charts are not used here.</p>';
 
     const saves = namedSaves();
-    $('saveList').innerHTML = saves.map(function (s, i) {
-      return '<option value="' + i + '">' + esc(s.name) + '</option>';
-    }).join('');
+    $('saveList').innerHTML = saveOptions(saves);
     renderPrint();
   }
 
@@ -1052,14 +1049,107 @@
     reader.readAsText(file);
   }
 
+  function saveOptions(saves) {
+    return saves.map(function (s, i) {
+      const label = window.SaveSlots ? SaveSlots.label(s) : (s.name || 'Save');
+      return '<option value="' + i + '">' + esc(label) + '</option>';
+    }).join('');
+  }
+  function gardenSnapshot() {
+    const data = JSON.parse(JSON.stringify(state));
+    delete data.demo;
+    delete data.tool;
+    delete data.armed;
+    delete data.viewOnly;
+    return data;
+  }
+  function authHeader() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('yardgrid-auth') || 'null');
+      return saved && saved.token ? { Authorization: 'Bearer ' + saved.token } : {};
+    } catch (e) { return {}; }
+  }
+  function cloudFileUrl(fileId, viewOnly) {
+    if (viewOnly) {
+      const token = new URLSearchParams(location.search).get('share') || '';
+      return '/api/share/' + encodeURIComponent(token) + '/file/' + encodeURIComponent(fileId);
+    }
+    return '/api/files/' + encodeURIComponent(fileId);
+  }
+  window.YardBridge = {
+    describe: function () {
+      return {
+        id: state.cloudId || '',
+        name: state.name || 'Garden',
+        kind: state.mode === 'place' ? 'arrangement' : 'plan',
+        garden: gardenSnapshot()
+      };
+    },
+    photoBlob: function () {
+      if (!state.photo) return Promise.resolve(null);
+      return idbGet(state.id).then(function (blob) { return blob && blob.size ? blob : null; });
+    },
+    stampBlobs: function () {
+      const rows = [];
+      state.stamps.forEach(function (s) {
+        const blob = stampBlobs.get(s.id);
+        if (blob) rows.push({ id: s.id, blob: blob });
+      });
+      return Promise.resolve(rows);
+    },
+    rememberCloud: function (id) {
+      state.cloudId = id || '';
+      state.viewOnly = false;
+      persist();
+    },
+    applyCloud: function (record, viewOnly) {
+      const g = (record && record.garden) || {};
+      const kind = record && record.kind === 'arrangement' ? 'place' : (g.mode === 'place' ? 'place' : 'grid');
+      Object.assign(state, blank(), g, {
+        id: uid(),
+        cloudId: viewOnly ? '' : ((record && record.id) || ''),
+        name: (record && record.name) || g.name || 'Garden',
+        mode: kind,
+        tool: 'pan', armed: null, demo: false, viewOnly: !!viewOnly
+      });
+      if (!state.pieces) state.pieces = [];
+      if (!state.stamps) state.stamps = [];
+      const headers = viewOnly ? {} : authHeader();
+      const jobs = [];
+      if (record && record.photoId) {
+        jobs.push(fetch(cloudFileUrl(record.photoId, viewOnly), { headers: headers }).then(function (res) {
+          if (!res.ok) throw new Error('photo');
+          return res.blob();
+        }).then(function (blob) {
+          return setPhotoFromBlob(blob, state.photo && state.photo.natW || 1, state.photo && state.photo.natH || 1, state.photo);
+        }).catch(function () { state.photo = null; }));
+      }
+      (record && record.stamps || []).forEach(function (stamp) {
+        if (!stamp || !stamp.fileId) return;
+        jobs.push(fetch(cloudFileUrl(stamp.fileId, viewOnly), { headers: headers }).then(function (res) {
+          if (!res.ok) throw new Error('stamp');
+          return res.blob();
+        }).then(function (blob) { rememberStamp(stamp.id, blob); }).catch(function () {}));
+      });
+      return Promise.all(jobs).then(function () {
+        if (!viewOnly) persist();
+        render();
+        setHint(viewOnly
+          ? 'View only. This shared garden is not saved over the plan in this browser.'
+          : 'Opened from your account.');
+      });
+    }
+  };
   function saveNamed() {
+    if (state.viewOnly) { setHint('This is a view-only garden. Export a copy if you want a file.'); return; }
     state.demo = false;
-    const list = namedSaves();
-    list.unshift({ name: state.name || 'Garden', saved: new Date().toISOString(), data: JSON.parse(JSON.stringify(state)) });
-    writeSaves(list.slice(0, 20));
+    const kind = state.mode === 'place' ? 'arrangement' : 'plan';
+    const item = { name: state.name || 'Garden', kind: kind, saved: new Date().toISOString(), data: gardenSnapshot() };
+    const next = window.SaveSlots ? SaveSlots.applySave(namedSaves(), item) : [item];
+    writeSaves(next);
     persist();
     render();
-    setHint('Saved in this browser.');
+    setHint(kind === 'arrangement' ? 'Saved this arrangement in this browser.' : 'Saved this garden plan in this browser.');
   }
   function loadNamed() {
     const list = namedSaves();
@@ -1426,6 +1516,15 @@
 
   function start() {
     wire();
+    const params = new URLSearchParams(location.search);
+    const share = params.get('share');
+    if (share) {
+      fetch('/api/share/' + encodeURIComponent(share)).then(function (res) { return res.json(); }).then(function (data) {
+        if (!data || !data.garden) { render(); setHint('That link does not open a garden.'); return; }
+        return window.YardBridge.applyCloud(data.garden, true);
+      }).catch(function () { render(); setHint('That link does not open a garden.'); });
+      return;
+    }
     const demo = /(?:\?|&)demo=1(?:&|$)/.test(location.search);
     if (demo) { loadDemo(); return; }
     const had = loadCurrent();

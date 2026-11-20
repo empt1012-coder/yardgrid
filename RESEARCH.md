@@ -4,6 +4,27 @@ Date: 18 November 2026. These are notes for a prototype, not a launch. No domain
 
 The public name is now Bloom & Bed Garden. The notes below still use the earlier working name. The site stays on yardgrid.netlify.app until a domain is connected. Do not buy or attach a domain from these notes.
 
+## Cloud save (19 November 2026)
+
+Question: the simplest way to add email sign-in and per-user storage to this static Netlify site for $0 at low traffic.
+
+Netlify Identity is supported again. A 6 September 2026 Netlify knowledge-base article says Identity is included on credit-based plans at no extra cost, and that sites should use `@netlify/identity` rather than the old widget. The 2025 deprecation was reversed in February 2026, so older “use Auth0 instead” posts are out of date. Identity is turned on in the site dashboard. There is no public API for that switch. It does not run under `netlify dev`. Confirmation mail comes from Netlify unless custom SMTP is added, and custom SMTP is a paid add-on, so this build stays on the default mail.
+
+Netlify Blobs (`@netlify/blobs`) store one JSON garden per key and the shrunk pictures beside it. Blobs are not a database and have no access rules of their own. A function checks the Identity token and the Plus flag before it writes. A site-wide store is shared with deploy previews, so a preview must not be used to delete production gardens. The free plan includes functions and Blobs inside the monthly credit pool (300 credits on the free plan, and the site pauses when the credits run out). That cap is the cost control. It is $0 until the credits are gone.
+
+Supabase’s pricing page lists a free tier. Starting it means a new vendor account. This task says to stop and list any step that needs a new account, so a Supabase project was not created.
+
+Choice: Netlify Identity, Functions, and Blobs on the existing yardgrid site. No new account, and $0 at low traffic. Stripe stays on Emilio’s existing account, in test mode only, with keys in Netlify environment variables. The function rejects any secret that does not start with `sk_test_`. Going live is a later change he approves, including a code change, because a live key will not work until that rejection is removed. Automatic tax is sent as enabled on Checkout. Bank, payout, and tax settings are not changed from here.
+
+Sources checked 19 November 2026:
+
+- Netlify, “How to add user login to a Netlify site with Identity,” 6 September 2026: https://www.netlify.com/knowledge-base/how-to-add-user-login-to-a-netlify-site-with-identity/
+- Netlify docs, “Authenticate users with Netlify Identity,” updated 3 November 2026. Free plan includes email sign-in. Custom outgoing email is Pro: https://docs.netlify.com/manage/security/secure-access-to-sites/identity/overview/
+- Netlify, “Netlify + Auth0: Platform extensibility and Identity changes,” updated 19 February 2026 to say Identity stays supported: https://www.netlify.com/blog/auth0-extension-identity-changes/
+- https://docs.netlify.com/build/data-and-storage/netlify-blobs/
+- Free plan is 300 credits a month with a hard pause, and the pricing page includes Blob storage: https://www.netlify.com/pricing/ and https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/how-credits-work/
+- https://supabase.com/pricing
+
 ## 1. Tools that already exist
 
 The comparison pages below are publisher roundups, several of them from companies that also sell a planner. They are useful for pricing and feature claims. They are not independent lab tests.

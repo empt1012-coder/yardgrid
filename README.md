@@ -26,6 +26,10 @@ Then open http://127.0.0.1:8787/
 - Ad spots are HTML comments only. There is no ad code.
 - The planned domain is not connected. Do not treat `RESEARCH.md` name ideas as the live site name. The visitor-facing name is Bloom & Bed Garden.
 
+## Plus (test mode)
+
+Cloud save is optional. The tools stay free. Sign-in is Netlify Identity. Gardens and pictures are stored with Netlify Blobs through a function. Stripe Checkout and the customer portal run only with test keys in the Netlify environment (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY`). Those keys are not in this repo. The function refuses a key that does not start with `sk_test_`.
+
 ## What is next
 
 Emilio decides on a domain, affiliate sign-ups, and analytics. The live copy is the Netlify site above. The original Scene Board folder was only read.

@@ -13,6 +13,7 @@
     <nav class="nav">
       <a href="index.html">Home</a>
       <a href="plan.html">Planner</a>
+      <a href="charts/planting-calendar.html">Charts</a>
       <a href="guides/raised-bed.html">Guides</a>
       <a href="about.html">About</a>
     </nav>
@@ -143,17 +144,47 @@
         <label class="file">Import<input id="importFile" type="file" accept="application/json,.json"></label>
         <button type="button" id="printBtn">Print</button>
       </div>
+      <p class="muted">This browser keeps one garden plan and one arrangement.</p>
       <label style="margin-top:8px">Saved in this browser
         <select id="saveList"></select>
       </label>
       <button type="button" id="loadBtn">Load selected</button>
+      <details class="account-box" id="accountBox">
+        <summary>Save to your account</summary>
+        <p class="muted" id="accountStatus">Free. One garden plan and one arrangement stay in this browser.</p>
+        <div id="accountSignedOut">
+          <form id="accountForm">
+            <label>Email <input id="accountEmailInput" type="email" autocomplete="username" required></label>
+            <label>Password <input id="accountPasswordInput" type="password" minlength="8" autocomplete="current-password" required></label>
+            <label> <select id="accountMode"><option value="signin">Sign in</option><option value="create">Create account</option></select></label>
+            <button type="submit" class="primary">Continue</button>
+          </form>
+          <p class="muted"><a href="plus.html">Bloom &amp; Bed Plus</a> is $5 a month or $30 a year. The tools stay free.</p>
+        </div>
+        <div id="accountSignedIn" hidden>
+          <p id="accountEmail"></p>
+          <div class="row">
+            <button type="button" class="primary" id="cloudSave">Save to your account</button>
+            <button type="button" id="plusMonthly">Plus monthly</button>
+            <button type="button" id="plusYearly">Plus yearly</button>
+          </div>
+          <div class="row">
+            <button type="button" id="plusPortal">Manage subscription</button>
+            <button type="button" id="accountSignOut">Sign out</button>
+            <button type="button" id="accountDelete">Delete account</button>
+          </div>
+          <div id="cloudList"></div>
+        </div>
+      </details>
     </aside>
   </div>
   <button type="button" id="plantsToggle" class="plants-toggle" aria-expanded="false" aria-controls="library">Plants</button>
   <div id="printSheet"></div>
+  <script src="js/save-slots.js"></script>
   <script src="js/plants.js"></script>
   <script src="js/photo-library.js"></script>
   <script src="js/logic.js"></script>
   <script src="js/planner.js"></script>
+  <script src="js/account.js"></script>
 </body>
 </html>
