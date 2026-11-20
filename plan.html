@@ -87,7 +87,7 @@
             <button type="button" id="pieceBack">Back</button>
             <button type="button" id="pieceDelete">Delete</button>
           </div>
-          <p class="muted">PNG keeps a clear background. Drag a picture to move it. On a phone, select it and pinch with two fingers to resize and turn it. On a wide screen, use the handles.</p>
+          <p class="muted">PNG keeps a clear background. Drag a picture from the list onto the yard, then drag it to move it. On a phone, select it and pinch with two fingers to resize and turn it. On a wide screen, use the handles.</p>
         </div>
         <div class="photo-panel" id="photoPanel">
           <button type="button" class="photo-toggle" id="photoToggle" aria-expanded="false" aria-controls="photoBody">Yard photo</button>
@@ -97,7 +97,7 @@
           <button type="button" id="toolPhoto" title="Drag the yard photo"><span class="wide">Move photo</span><span class="narrow">Photo</span></button>
           <button type="button" id="toolScale" title="Drag a line across a known length"><span class="wide">Set scale</span><span class="narrow">Scale</span></button>
           <label class="file" title="Upload a JPG or PNG"><span class="wide">Upload photo</span><span class="narrow">Upload</span><input id="photoFile" type="file" accept="image/jpeg,image/png,image/heic,image/heif,.jpg,.jpeg,.png,.heic,.heif"></label>
-          <label class="file" title="Use the camera"><span class="wide">Take photo</span><span class="narrow">Camera</span><input id="cameraFile" type="file" accept="image/*" capture="environment"></label>
+          <button type="button" id="takePhoto" title="Take a picture with this computer's camera"><span class="wide">Take photo</span><span class="narrow">Camera</span></button>
           <button type="button" id="removePhoto" title="Remove the yard photo"><span class="wide">Remove photo</span><span class="narrow">Remove</span></button>
         </div>
         <div class="row">
@@ -116,6 +116,16 @@
       <div id="viewport" class="grid-on"></div>
       <p id="hint" class="hint"></p>
     </main>
+    <div id="cameraBox" class="camera-box" hidden>
+      <div class="camera-panel">
+        <video id="cameraVideo" playsinline autoplay muted></video>
+        <div class="row">
+          <button type="button" class="primary" id="cameraSnap">Use this photo</button>
+          <button type="button" id="cameraClose">Cancel</button>
+        </div>
+        <p class="muted" id="cameraNote">The preview is the camera on this computer. Nothing is sent until you save the garden yourself.</p>
+      </div>
+    </div>
     <aside class="side">
       <div class="tabs">
         <button type="button" class="on" data-tab="panel-plan">Plant</button>

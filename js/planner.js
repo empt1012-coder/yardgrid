@@ -33,6 +33,8 @@
   };
   let photoUrl = null;
   let drag = null;
+  let cameraStream = null;
+  let cameraMirror = false;
   const stampUrls = {};
   const stampBlobs = new Map();
   const pointers = new Map();
@@ -217,6 +219,16 @@
       y: (e.clientY - r.top - state.panY) / state.ppm
     };
   }
+  function dropFeet(e, moved) {
+    const vp = $('viewport').getBoundingClientRect();
+    const over = e.clientX >= vp.left && e.clientX <= vp.right && e.clientY >= vp.top && e.clientY <= vp.bottom;
+    if (over) return feetFromEvent(e);
+    if (!moved) return viewCenter();
+    return null;
+  }
+  function holdPointer(el, id) {
+    try { el.setPointerCapture(id); } catch (err) { /* the drop still uses the pointer position */ }
+  }
 
   function setHint(text) { $('hint').textContent = text; }
 
@@ -273,16 +285,33 @@
       for (let i = 0; i < buttons.length; i++) buttons[i].classList.toggle('on', buttons[i] === btn);
       renderPhotoGrid();
     });
-    $('libGrid').addEventListener('click', function (e) {
+    $('libGrid').addEventListener('pointerdown', function (e) {
       const btn = e.target.closest('[data-lib]');
-      if (!btn) return;
-      const item = libraryItem(btn.getAttribute('data-lib'));
+      if (!btn || (e.button != null && e.button !== 0)) return;
+      e.preventDefault();
+      drag = { kind: 'libpic', id: btn.getAttribute('data-lib'), x: e.clientX, y: e.clientY, moved: false, pointer: e.pointerId };
+      holdPointer(btn, e.pointerId);
+    });
+    $('libGrid').addEventListener('pointermove', function (e) {
+      if (!drag || drag.kind !== 'libpic' || drag.pointer !== e.pointerId) return;
+      if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 8) drag.moved = true;
+    });
+    $('libGrid').addEventListener('pointerup', function (e) {
+      if (!drag || drag.kind !== 'libpic' || drag.pointer !== e.pointerId) return;
+      const id = drag.id;
+      const moved = drag.moved;
+      drag = null;
+      const item = libraryItem(id);
       if (!item) return;
-      const ft = viewCenter();
+      const spot = dropFeet(e, moved);
+      if (!spot) { setHint('Drop the picture on the yard.'); return; }
       const aspect = item.w ? item.h / item.w : 1;
       const wFt = item.category === 'pots' ? 1.5 : (item.category === 'flowers' ? 1.7 : 2.6);
-      addPiece({ kind: 'library', libraryId: item.id, x: ft.x, y: ft.y, wFt: wFt, hFt: Math.max(0.4, wFt * aspect) });
-      setHint(item.name + ' placed. Drag it, or pinch with two fingers.');
+      addPiece({ kind: 'library', libraryId: item.id, x: spot.x, y: spot.y, wFt: wFt, hFt: Math.max(0.4, wFt * aspect) });
+      setHint(item.name + ' is on the yard. Drag it to move it.');
+    });
+    $('libGrid').addEventListener('pointercancel', function (e) {
+      if (drag && drag.kind === 'libpic' && drag.pointer === e.pointerId) drag = null;
     });
   }
   function viewCenter() {
@@ -585,7 +614,7 @@
     e.preventDefault();
     const id = btn.getAttribute('data-plant');
     drag = { kind: 'lib', id: id, x: e.clientX, y: e.clientY, moved: false, pointer: e.pointerId };
-    btn.setPointerCapture(e.pointerId);
+    holdPointer(btn, e.pointerId);
   }
   function onLibraryPointerMove(e) {
     if (!drag || drag.kind !== 'lib' || drag.pointer !== e.pointerId) return;
@@ -597,17 +626,10 @@
     const moved = drag.moved;
     drag = null;
     if (state.mode === 'place') {
-      const center = viewCenter();
-      let x = center.x, y = center.y;
-      if (moved) {
-        const vp = $('viewport').getBoundingClientRect();
-        if (e.clientX >= vp.left && e.clientX <= vp.right && e.clientY >= vp.top && e.clientY <= vp.bottom) {
-          x = (e.clientX - vp.left - state.panX) / state.ppm;
-          y = (e.clientY - vp.top - state.panY) / state.ppm;
-        }
-      }
-      addPiece({ kind: 'icon', plantId: id, x: x, y: y, wFt: 1.6, hFt: 1.6 });
-      setHint('Icon placed. Drag it, or pinch with two fingers.');
+      const spot = dropFeet(e, moved);
+      if (!spot) { setHint('Drop the picture on the yard.'); return; }
+      addPiece({ kind: 'icon', plantId: id, x: spot.x, y: spot.y, wFt: 1.6, hFt: 1.6 });
+      setHint('Icon is on the yard. Drag it to move it.');
       return;
     }
     if (!moved) {
@@ -643,14 +665,20 @@
       }
       return;
     }
-    if (state.mode === 'place' && state.tool !== 'scale' && state.tool !== 'photo') {
+    const ft = feetFromEvent(e);
+    if (state.tool === 'scale') {
+      drag = { kind: 'scale', a: ft, b: ft, pointer: e.pointerId };
+      holdPointer($('viewport'), e.pointerId);
+      return;
+    }
+    if (state.mode === 'place') {
       const handle = e.target.closest('[data-handle]');
       const pieceEl = e.target.closest('[data-piece]');
       if (handle && pieceEl) {
         const piece = pieceById(pieceEl.getAttribute('data-piece'));
         state.selectedPiece = piece.id;
         drag = { kind: handle.getAttribute('data-handle') === 'rot' ? 'prot' : 'psize', pointer: e.pointerId, id: piece.id };
-        $('viewport').setPointerCapture(e.pointerId);
+        holdPointer($('viewport'), e.pointerId);
         render();
         return;
       }
@@ -658,7 +686,7 @@
         const piece = pieceById(pieceEl.getAttribute('data-piece'));
         state.selectedPiece = piece.id;
         drag = { kind: 'pmove', pointer: e.pointerId, id: piece.id, x: e.clientX, y: e.clientY, ox: piece.x, oy: piece.y };
-        $('viewport').setPointerCapture(e.pointerId);
+        holdPointer($('viewport'), e.pointerId);
         render();
         return;
       }
@@ -667,22 +695,11 @@
     const move = e.target.closest('[data-move]');
     const plantingEl = e.target.closest('[data-plant-id]');
     const cell = e.target.closest('[data-cell]');
-    const ft = feetFromEvent(e);
-    if (state.tool === 'scale') {
-      drag = { kind: 'scale', a: ft, b: ft, pointer: e.pointerId };
-      $('viewport').setPointerCapture(e.pointerId);
-      return;
-    }
-    if (state.tool === 'photo' && state.photo) {
-      drag = { kind: 'photo', pointer: e.pointerId, x: e.clientX, y: e.clientY, ox: state.photo.x, oy: state.photo.y };
-      $('viewport').setPointerCapture(e.pointerId);
-      return;
-    }
     if (move) {
       const bed = bedById(move.getAttribute('data-move'));
       state.selectedBed = bed.id;
       drag = { kind: 'bed', pointer: e.pointerId, id: bed.id, x: e.clientX, y: e.clientY, ox: bed.x, oy: bed.y };
-      $('viewport').setPointerCapture(e.pointerId);
+      holdPointer($('viewport'), e.pointerId);
       return;
     }
     if (plantingEl) {
@@ -690,17 +707,26 @@
       state.selectedPlant = planting.id;
       state.selectedBed = planting.bedId;
       drag = { kind: 'plant', pointer: e.pointerId, id: planting.id, x: e.clientX, y: e.clientY, moved: false };
-      $('viewport').setPointerCapture(e.pointerId);
+      holdPointer($('viewport'), e.pointerId);
       render();
       return;
     }
-    if (cell && state.armed) {
-      const parts = cell.getAttribute('data-cell').split(':');
-      place(bedById(parts[0]), Number(parts[1]), Number(parts[2]), state.armed);
+    if (cell) {
+      if (state.armed) {
+        const parts = cell.getAttribute('data-cell').split(':');
+        place(bedById(parts[0]), Number(parts[1]), Number(parts[2]), state.armed);
+      } else {
+        setHint('Tap a plant in the list, then tap an empty square.');
+      }
       return;
     }
-    drag = { kind: 'pan', pointer: e.pointerId, x: e.clientX, y: e.clientY, ox: state.panX, oy: state.panY };
-    $('viewport').setPointerCapture(e.pointerId);
+    if (state.tool === 'photo' && state.photo) {
+      drag = { kind: 'photo', pointer: e.pointerId, x: e.clientX, y: e.clientY, ox: state.photo.x, oy: state.photo.y };
+      holdPointer($('viewport'), e.pointerId);
+      return;
+    }
+    drag = { kind: 'pan', pointer: e.pointerId, x: e.clientX, y: e.clientY, ox: state.panX, oy: state.panY, moved: false };
+    holdPointer($('viewport'), e.pointerId);
   }
 
   function onBoardPointerMove(e) {
@@ -735,6 +761,7 @@
       bed.y = Math.round(drag.oy + (e.clientY - drag.y) / state.ppm);
       renderBoard();
     } else if (drag.kind === 'pan') {
+      if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 8) drag.moved = true;
       state.panX = drag.ox + (e.clientX - drag.x);
       state.panY = drag.oy + (e.clientY - drag.y);
       renderBoard();
@@ -787,6 +814,11 @@
       setHint('The line is ' + len.toFixed(1) + ' ft on the grid. Type the real length.');
       render();
       return;
+    }
+    if (finished.kind === 'pan' && !finished.moved) {
+      if (state.mode === 'place' && !state.pieces.length) setHint('Tap a picture in the list, or drag it onto the yard.');
+      else if (state.mode !== 'place' && !state.beds.length) setHint('Add a bed, then tap a plant and tap a square.');
+      else if (state.mode !== 'place' && !state.armed) setHint('Tap a plant in the list, then tap an empty square.');
     }
     if (finished.kind === 'plant' && finished.moved) {
       const el = document.elementFromPoint(e.clientX, e.clientY);
@@ -955,16 +987,79 @@
     render();
   }
 
+  function closeCamera() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(function (track) { track.stop(); });
+      cameraStream = null;
+    }
+    const video = $('cameraVideo');
+    if (video) { video.srcObject = null; video.classList.remove('mirrored'); }
+    const box = $('cameraBox');
+    if (box) box.hidden = true;
+    cameraMirror = false;
+  }
+  async function openCamera() {
+    const box = $('cameraBox');
+    const video = $('cameraVideo');
+    if (!box || !video) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setHint('This browser did not open a camera. Use Upload photo instead.');
+      return;
+    }
+    closeCamera();
+    const mobile = window.matchMedia('(pointer: coarse)').matches && window.innerWidth < 900;
+    const facing = mobile ? 'environment' : 'user';
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facing } }, audio: false });
+    } catch (err) {
+      try { stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); }
+      catch (again) {
+        const name = (again && again.name) || '';
+        if (name === 'NotAllowedError' || name === 'PermissionDeniedError') setHint('The camera stayed off. Allow the camera for this site, or use Upload photo.');
+        else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') setHint('No camera was found. Use Upload photo instead.');
+        else setHint('The camera did not open. Use Upload photo instead.');
+        return;
+      }
+    }
+    cameraStream = stream;
+    const track = stream.getVideoTracks()[0];
+    const settings = track && track.getSettings ? track.getSettings() : {};
+    cameraMirror = settings.facingMode !== 'environment';
+    video.classList.toggle('mirrored', cameraMirror);
+    video.srcObject = stream;
+    box.hidden = false;
+    const play = video.play();
+    if (play && play.catch) play.catch(function () {});
+  }
+  function snapCamera() {
+    const video = $('cameraVideo');
+    if (!video || !video.videoWidth) { setHint('The camera picture is not ready yet.'); return; }
+    const c = document.createElement('canvas');
+    c.width = video.videoWidth;
+    c.height = video.videoHeight;
+    const g = c.getContext('2d');
+    if (cameraMirror) { g.translate(c.width, 0); g.scale(-1, 1); }
+    g.drawImage(video, 0, 0);
+    c.toBlob(function (blob) {
+      closeCamera();
+      if (!blob) { setHint('Could not take that photo.'); return; }
+      onPhotoFile(new File([blob], 'camera.jpg', { type: 'image/jpeg' }));
+    }, 'image/jpeg', 0.9);
+  }
+
   async function onPhotoFile(file) {
     if (!file) return;
     try {
       const shrunk = await shrinkFile(file);
       await setPhotoFromBlob(shrunk.blob, shrunk.w, shrunk.h, null);
-      state.tool = 'photo';
+      state.tool = 'pan';
       state.demo = false;
       persist();
       render();
-      setHint('Drag the photo to line it up. Use Photo size, or Set scale if you know a real length.');
+      setHint(state.mode === 'place'
+        ? 'Photo added. Tap a picture in the list, or drag it onto the yard. Move photo slides the picture.'
+        : 'Photo added. Add a bed, tap a plant, then tap a square. Move photo slides the picture.');
     } catch (err) {
       setHint(err.message || 'Could not use that picture.');
     }
@@ -1398,22 +1493,40 @@
       if (!state.demo) persist();
       render();
       setHint(state.mode === 'place'
-        ? 'Add pictures, then drag them on the yard. Select one and pinch with two fingers to resize and turn it.'
-        : 'Grid plan. Beds and spacing are back.');
+        ? 'Tap a picture in the list, or drag it onto the yard. Drag a placed picture to move it.'
+        : 'Grid plan. Add a bed, tap a plant, then tap a square.');
     }
     $('howGridToggle').addEventListener('click', function () { toggleHow('grid'); });
     $('howPlaceToggle').addEventListener('click', function () { toggleHow('place'); });
     $('modeGrid').addEventListener('click', function () { setMode('grid'); });
     $('modePlace').addEventListener('click', function () { setMode('place'); });
     $('stampFile').addEventListener('change', function (e) { addStampFiles(e.target.files); e.target.value = ''; });
-    $('stampTray').addEventListener('click', function (e) {
+    $('stampTray').addEventListener('pointerdown', function (e) {
       const btn = e.target.closest('[data-stamp]');
-      if (!btn) return;
-      const stamp = state.stamps.filter(function (s) { return s.id === btn.getAttribute('data-stamp'); })[0];
+      if (!btn || (e.button != null && e.button !== 0)) return;
+      e.preventDefault();
+      drag = { kind: 'stamp', id: btn.getAttribute('data-stamp'), x: e.clientX, y: e.clientY, moved: false, pointer: e.pointerId };
+      holdPointer(btn, e.pointerId);
+    });
+    $('stampTray').addEventListener('pointermove', function (e) {
+      if (!drag || drag.kind !== 'stamp' || drag.pointer !== e.pointerId) return;
+      if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 8) drag.moved = true;
+    });
+    $('stampTray').addEventListener('pointerup', function (e) {
+      if (!drag || drag.kind !== 'stamp' || drag.pointer !== e.pointerId) return;
+      const id = drag.id;
+      const moved = drag.moved;
+      drag = null;
+      const stamp = state.stamps.filter(function (s) { return s.id === id; })[0];
       if (!stamp) return;
-      const ft = viewCenter();
+      const spot = dropFeet(e, moved);
+      if (!spot) { setHint('Drop the picture on the yard.'); return; }
       const aspect = stamp.w ? stamp.h / stamp.w : 1;
-      addPiece({ kind: 'stamp', stampId: stamp.id, x: ft.x, y: ft.y, wFt: 2.4, hFt: 2.4 * aspect });
+      addPiece({ kind: 'stamp', stampId: stamp.id, x: spot.x, y: spot.y, wFt: 2.4, hFt: 2.4 * aspect });
+      setHint('Picture is on the yard. Drag it to move it.');
+    });
+    $('stampTray').addEventListener('pointercancel', function (e) {
+      if (drag && drag.kind === 'stamp' && drag.pointer === e.pointerId) drag = null;
     });
     $('pieceDup').addEventListener('click', function () {
       withPiece(function (piece) {
@@ -1473,7 +1586,10 @@
     $('scaleApply').addEventListener('click', applyScale);
     $('scaleCancel').addEventListener('click', function () { $('scaleBox').hidden = true; state.tool = 'pan'; render(); });
     $('photoFile').addEventListener('change', function (e) { onPhotoFile(e.target.files[0]); e.target.value = ''; });
-    $('cameraFile').addEventListener('change', function (e) { onPhotoFile(e.target.files[0]); e.target.value = ''; });
+    $('takePhoto').addEventListener('click', openCamera);
+    $('cameraSnap').addEventListener('click', snapCamera);
+    $('cameraClose').addEventListener('click', closeCamera);
+    window.addEventListener('pagehide', closeCamera);
     $('removePhoto').addEventListener('click', function () {
       state.photo = null;
       if (photoUrl) URL.revokeObjectURL(photoUrl);
