@@ -2,7 +2,7 @@
 
 Date: 18 November 2026. These are notes for a prototype, not a launch. No domain was checked out or bought. No affiliate program was joined.
 
-The public name is now Bloom & Bed Garden. The notes below still use the earlier working name. The site stays on yardgrid.netlify.app until a domain is connected. Do not buy or attach a domain from these notes.
+The public name is now Bloom & Bed Garden, at https://bloomandbedgarden.com. The notes below still use the earlier working name. Do not buy another domain from these notes.
 
 ## Cloud save (19 November 2026)
 
