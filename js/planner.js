@@ -184,11 +184,15 @@
     if (!rec || !rec.zone) return '<p class="muted">' + link + '</p>';
     return '<p class="muted">Zone ' + esc(rec.zone) + (rec.zip ? ', ZIP ' + esc(rec.zip) : '') + '. ' + link + '</p>';
   }
+  let focusPhoto = '';
+  let arriveHint = '';
   function applyChartQuery() {
     const q = new URLSearchParams(location.search);
     const frost = q.get('frost') || '';
     const zone = q.get('zone') || '';
     const plant = q.get('plant') || '';
+    const mode = q.get('mode') || '';
+    const photo = q.get('photo') || '';
     let changed = false;
     if (/^\d{4}-\d{2}-\d{2}$/.test(frost)) { state.frost = frost; changed = true; }
     else if (!state.frost) {
@@ -196,6 +200,30 @@
       if (rec && /^\d{4}-\d{2}-\d{2}$/.test(rec.frost || '')) { state.frost = rec.frost; changed = true; }
     }
     if (plant && byId[plant]) { state.armed = plant; changed = true; }
+    if (photo && libraryItem(photo)) {
+      focusPhoto = photo;
+      if (state.mode !== 'place') state.mode = 'place';
+      arriveHint = libraryItem(photo).name + ' is in the picture list. Tap it, then tap the yard.';
+      changed = true;
+    } else if (mode === 'place') {
+      if (state.mode !== 'place') state.mode = 'place';
+      arriveHint = 'Placement is open. Tap a picture, then tap the yard.';
+      changed = true;
+    }
+    const bedMatch = /^(\d{1,2})x(\d{1,2})$/.exec(q.get('bed') || '');
+    if (bedMatch && state.mode !== 'place' && !state.beds.length) {
+      const w = Number(bedMatch[1]);
+      const h = Number(bedMatch[2]);
+      if (w >= 1 && w <= 20 && h >= 1 && h <= 20) {
+        const bed = { id: uid(), name: 'Bed 1', x: 1, y: 1, w: w, h: h };
+        state.beds.push(bed);
+        state.selectedBed = bed.id;
+        if ($('bedW')) $('bedW').value = String(w);
+        if ($('bedH')) $('bedH').value = String(h);
+        arriveHint = 'A starter bed is on the board. Tap a square to place the selected plant.';
+        changed = true;
+      }
+    }
     if (zone || frost) {
       const rec = zoneRecord() || {};
       if (zone) rec.zone = zone;
@@ -265,7 +293,8 @@
       return item.name.toLowerCase().indexOf(q) !== -1 || (item.tag || '').toLowerCase().indexOf(q) !== -1;
     });
     grid.innerHTML = shown.map(function (item) {
-      return '<button type="button" class="lib-card" data-lib="' + esc(item.id) + '"><img alt="" loading="lazy" src="' + esc(item.thumb) + '"><span><strong>' + esc(item.name) + '</strong><span>' + esc(item.tag) + '</span></span></button>';
+      const on = item.id === focusPhoto ? ' on' : '';
+      return '<button type="button" class="lib-card' + on + '" data-lib="' + esc(item.id) + '"><img alt="" loading="lazy" src="' + esc(item.thumb) + '"><span><strong>' + esc(item.name) + '</strong><span>' + esc(item.tag) + '</span></span></button>';
     }).join('') || '<p class="muted">No photos match.</p>';
   }
   function syncPhotoLibrary() {
@@ -275,6 +304,10 @@
     box.hidden = !show;
     if (!show || libBuilt) return;
     libBuilt = true;
+    if (focusPhoto) {
+      const item = libraryItem(focusPhoto);
+      if (item && $('libSearch')) $('libSearch').value = item.name;
+    }
     renderPhotoGrid();
     $('libSearch').addEventListener('input', renderPhotoGrid);
     $('libFilters').addEventListener('click', function (e) {
@@ -1677,7 +1710,9 @@
     Promise.all(jobs).then(function () {
       render();
       if (chartTouch) persist();
-      if (!state.beds.length && state.mode !== 'place') setHint('Add a bed, then tap a plant and tap a square. On a phone you can also drag the plant.');
+      if (focusPhoto) setPlantsOpen(true);
+      if (arriveHint) setHint(arriveHint);
+      else if (!state.beds.length && state.mode !== 'place') setHint('Add a bed, then tap a plant and tap a square. On a phone you can also drag the plant.');
     });
   }
 
