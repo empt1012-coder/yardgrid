@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Plan a bed · Yardgrid</title>
+  <title>Plan a bed · Bloom &amp; Bed Garden</title>
+  <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/site.css">
 </head>
 <body class="plan-page">
   <header class="site-header">
-    <a class="logo" href="index.html">Yardgrid</a>
+    <a class="logo" href="index.html"><img src="images/logo.svg" alt="Bloom &amp; Bed Garden"></a>
     <nav class="nav">
       <a href="index.html">Home</a>
       <a href="plan.html">Planner</a>
@@ -16,11 +17,43 @@
       <a href="about.html">About</a>
     </nav>
   </header>
+  <section class="how" id="howGrid">
+    <div class="how-bar">
+      <strong>How it works</strong>
+      <button type="button" id="howGridToggle">Hide video</button>
+    </div>
+    <video id="howGridVideo" controls preload="none" poster="videos/grid-poster.webp" playsinline>
+      <source src="videos/grid-plan.webm" type="video/webm">
+      <source src="videos/grid-plan.mp4" type="video/mp4">
+    </video>
+  </section>
+  <section class="how" id="howPlace" hidden>
+    <div class="how-bar">
+      <strong>How it works</strong>
+      <button type="button" id="howPlaceToggle">Hide video</button>
+    </div>
+    <video id="howPlaceVideo" controls preload="none" poster="videos/place-poster.webp" playsinline>
+      <source src="videos/placement.webm" type="video/webm">
+      <source src="videos/placement.mp4" type="video/mp4">
+    </video>
+  </section>
   <div class="plan-app">
     <aside class="library" id="library">
       <div class="library-head">
         <h2>Plants</h2>
         <button type="button" id="plantsClose" class="plants-close">Close</button>
+      </div>
+      <div id="photoLibrary" hidden>
+        <p class="muted">Plant library</p>
+        <label>Search photos <input id="libSearch" type="search" placeholder="Rose, fern, pot…"></label>
+        <div class="lib-filters" id="libFilters">
+          <button type="button" class="on" data-cat="all">All</button>
+          <button type="button" data-cat="indoor">Indoor</button>
+          <button type="button" data-cat="outdoor">Outdoor</button>
+          <button type="button" data-cat="flowers">Flowers</button>
+          <button type="button" data-cat="pots">Pots and vases</button>
+        </div>
+        <div id="libGrid"></div>
       </div>
       <div id="stampTray" hidden></div>
       <label>Search <input id="filter" type="search" placeholder="Carrot, herb…"></label>
@@ -119,6 +152,7 @@
   <button type="button" id="plantsToggle" class="plants-toggle" aria-expanded="false" aria-controls="library">Plants</button>
   <div id="printSheet"></div>
   <script src="js/plants.js"></script>
+  <script src="js/photo-library.js"></script>
   <script src="js/logic.js"></script>
   <script src="js/planner.js"></script>
 </body>

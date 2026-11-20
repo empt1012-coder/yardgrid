@@ -1,6 +1,8 @@
-# Yardgrid
+# Bloom & Bed Garden
 
-A static garden-bed planner. Beds are a grid of 1-foot squares. Plant counts, days, and frost dates come from the extension pages in `SOURCES.md`.
+A static garden planner. You can lay out beds on a 1-foot grid, and you can arrange flowers and plants on a photo of your space. Plant counts, days, and frost dates come from the extension pages in `SOURCES.md`.
+
+The public site stays at https://yardgrid.netlify.app until a domain is connected. The address lives in `js/config.js` as `SITE_URL`. The GitHub repo and the Netlify project are still named yardgrid. Saved gardens use the same browser keys as before so older files still open.
 
 ## Open it
 
@@ -22,10 +24,10 @@ Then open http://127.0.0.1:8787/
 - Contact is `hello@example.com`.
 - Footer social links are `#`.
 - Ad spots are HTML comments only. There is no ad code.
-- The name Yardgrid and the domain ideas in `RESEARCH.md` are not registered by this project.
+- The planned domain is not connected. Do not treat `RESEARCH.md` name ideas as the live site name. The visitor-facing name is Bloom & Bed Garden.
 
 ## What is next
 
-Emilio decides on a domain, hosting, affiliate sign-ups, and analytics. This folder is not deployed. The original Scene Board folder was only read.
+Emilio decides on a domain, affiliate sign-ups, and analytics. The live copy is the Netlify site above. The original Scene Board folder was only read.
 
 The source is at https://github.com/empt1012-coder/yardgrid.

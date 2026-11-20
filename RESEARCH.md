@@ -2,6 +2,8 @@
 
 Date: 18 November 2026. These are notes for a prototype, not a launch. No domain was checked out or bought. No affiliate program was joined.
 
+The public name is now Bloom & Bed Garden. The notes below still use the earlier working name. The site stays on yardgrid.netlify.app until a domain is connected. Do not buy or attach a domain from these notes.
+
 ## 1. Tools that already exist
 
 The comparison pages below are publisher roundups, several of them from companies that also sell a planner. They are useful for pricing and feature claims. They are not independent lab tests.

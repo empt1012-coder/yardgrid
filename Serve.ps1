@@ -5,7 +5,7 @@ $prefix = 'http://127.0.0.1:8787/'
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add($prefix)
 $listener.Start()
-Write-Host "Yardgrid at $prefix  (Ctrl+C to stop)"
+Write-Host "Bloom & Bed Garden at $prefix  (Ctrl+C to stop)"
 Start-Process $prefix
 $types = @{
   '.html' = 'text/html; charset=utf-8'
@@ -15,6 +15,9 @@ $types = @{
   '.png'  = 'image/png'
   '.jpg'  = 'image/jpeg'
   '.svg'  = 'image/svg+xml'
+  '.webp' = 'image/webp'
+  '.mp4'  = 'video/mp4'
+  '.webm' = 'video/webm'
 }
 while ($listener.IsListening) {
   $ctx = $listener.GetContext()

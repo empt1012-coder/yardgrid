@@ -203,6 +203,57 @@
     state.pieces.forEach(function (p) { if (p.z >= z) z = p.z + 1; });
     return z;
   }
+  function libraryItem(id) {
+    const items = window.YardPhotos && YardPhotos.items;
+    if (!items) return null;
+    for (let i = 0; i < items.length; i++) if (items[i].id === id) return items[i];
+    return null;
+  }
+  let libCat = 'all';
+  let libBuilt = false;
+  function renderPhotoGrid() {
+    const grid = $('libGrid');
+    if (!grid) return;
+    const items = (window.YardPhotos && YardPhotos.items) || [];
+    const q = (($('libSearch') && $('libSearch').value) || '').trim().toLowerCase();
+    const shown = items.filter(function (item) {
+      if (libCat !== 'all' && item.category !== libCat) return false;
+      if (!q) return true;
+      return item.name.toLowerCase().indexOf(q) !== -1 || (item.tag || '').toLowerCase().indexOf(q) !== -1;
+    });
+    grid.innerHTML = shown.map(function (item) {
+      return '<button type="button" class="lib-card" data-lib="' + esc(item.id) + '"><img alt="" loading="lazy" src="' + esc(item.thumb) + '"><span><strong>' + esc(item.name) + '</strong><span>' + esc(item.tag) + '</span></span></button>';
+    }).join('') || '<p class="muted">No photos match.</p>';
+  }
+  function syncPhotoLibrary() {
+    const box = $('photoLibrary');
+    if (!box) return;
+    const show = state.mode === 'place';
+    box.hidden = !show;
+    if (!show || libBuilt) return;
+    libBuilt = true;
+    renderPhotoGrid();
+    $('libSearch').addEventListener('input', renderPhotoGrid);
+    $('libFilters').addEventListener('click', function (e) {
+      const btn = e.target.closest('[data-cat]');
+      if (!btn) return;
+      libCat = btn.getAttribute('data-cat');
+      const buttons = $('libFilters').querySelectorAll('button');
+      for (let i = 0; i < buttons.length; i++) buttons[i].classList.toggle('on', buttons[i] === btn);
+      renderPhotoGrid();
+    });
+    $('libGrid').addEventListener('click', function (e) {
+      const btn = e.target.closest('[data-lib]');
+      if (!btn) return;
+      const item = libraryItem(btn.getAttribute('data-lib'));
+      if (!item) return;
+      const ft = viewCenter();
+      const aspect = item.w ? item.h / item.w : 1;
+      const wFt = item.category === 'pots' ? 1.5 : (item.category === 'flowers' ? 1.7 : 2.6);
+      addPiece({ kind: 'library', libraryId: item.id, x: ft.x, y: ft.y, wFt: wFt, hFt: Math.max(0.4, wFt * aspect) });
+      setHint(item.name + ' placed. Drag it, or pinch with two fingers.');
+    });
+  }
   function viewCenter() {
     const vp = $('viewport');
     return {
@@ -213,6 +264,7 @@
   function addPiece(fields) {
     const piece = {
       id: uid(), kind: fields.kind, stampId: fields.stampId || null, plantId: fields.plantId || null,
+      libraryId: fields.libraryId || null,
       x: fields.x, y: fields.y, wFt: fields.wFt, hFt: fields.hFt,
       rot: fields.rot || 0, flip: !!fields.flip, z: nextZ()
     };
@@ -276,6 +328,8 @@
         html += '<div class="piece' + (sel ? ' selected' : '') + '" data-piece="' + p.id + '" style="left:' + left + 'px;top:' + top + 'px;width:' + pw + 'px;height:' + ph + 'px;z-index:' + (10 + p.z) + ';transform:rotate(' + (p.rot || 0) + 'deg)' + flip + '">';
         if (p.kind === 'icon' && byId[p.plantId]) {
           html += '<div class="icon-face" style="font-size:' + Math.max(16, Math.round(ph * 0.62)) + 'px">' + byId[p.plantId].emoji + '</div>';
+        } else if (p.kind === 'library' && libraryItem(p.libraryId)) {
+          html += '<img alt="" src="' + esc(libraryItem(p.libraryId).full) + '">';
         } else if (stampUrls[p.stampId]) {
           html += '<img alt="" src="' + stampUrls[p.stampId] + '">';
         }
@@ -405,6 +459,9 @@
         if (p.kind === 'icon' && byId[p.plantId]) {
           return '<div class="print-piece" style="' + style + ';font-size:24px;display:flex;align-items:center;justify-content:center">' + byId[p.plantId].emoji + '</div>';
         }
+        if (p.kind === 'library' && libraryItem(p.libraryId)) {
+          return '<div class="print-piece" style="' + style + '"><img alt="" src="' + esc(libraryItem(p.libraryId).full) + '"></div>';
+        }
         if (!stampUrls[p.stampId]) return '';
         return '<div class="print-piece" style="' + style + '"><img alt="" src="' + stampUrls[p.stampId] + '"></div>';
       }).join('');
@@ -436,10 +493,12 @@
     $('opacity').value = state.opacity;
     $('photoSize').value = state.photo ? state.photo.wFt : 18;
     $('gridOn').checked = state.grid;
+    syncPhotoLibrary();
     $('modeGrid').classList.toggle('on', state.mode !== 'place');
     $('modePlace').classList.toggle('on', state.mode === 'place');
     $('placeBar').hidden = state.mode !== 'place';
     document.querySelector('.plan-app').classList.toggle('placing', state.mode === 'place');
+    syncHow();
     const head = document.querySelector('.library-head h2');
     if (head) head.textContent = state.mode === 'place' ? 'Pictures' : 'Plants';
     const plantsBtn = $('plantsToggle');
@@ -821,9 +880,10 @@
       if (p.flip) g.scale(-1, 1);
       const w = p.wFt * scale;
       const h = p.hFt * scale;
-      if (p.kind === 'stamp' && stampUrls[p.stampId]) {
+      const src = p.kind === 'stamp' ? stampUrls[p.stampId] : (p.kind === 'library' && libraryItem(p.libraryId) ? libraryItem(p.libraryId).full : '');
+      if (src) {
         try {
-          const img = await loadImg(stampUrls[p.stampId]);
+          const img = await loadImg(src);
           g.drawImage(img, -w / 2, -h / 2, w, h);
         } catch (e) { /* skip a picture that failed to load */ }
       } else if (p.kind === 'icon' && byId[p.plantId]) {
@@ -892,7 +952,9 @@
       const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = (state.name || 'garden').replace(/[^\w\-]+/g, '-') + '.yardgrid.json';
+      var rawName = (state.name || '').trim();
+      var fileStem = (!rawName || rawName === 'My garden') ? 'bloom-and-bed-garden-plan' : rawName.replace(/[^\w\-]+/g, '-').replace(/^-+|-+$/g, '');
+      a.download = (fileStem || 'bloom-and-bed-garden-plan') + '.json';
       a.click();
       setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
     };
@@ -923,8 +985,8 @@
     reader.onload = function () {
       let data;
       try { data = JSON.parse(reader.result); }
-      catch (e) { setHint('That file is not a Yardgrid garden.'); return; }
-      if (!data || data.format !== 'yardgrid-garden' || !data.garden) { setHint('That file is not a Yardgrid garden.'); return; }
+      catch (e) { setHint('That file is not a Bloom & Bed Garden plan.'); return; }
+      if (!data || data.format !== 'yardgrid-garden' || !data.garden) { setHint('That file is not a Bloom & Bed Garden plan.'); return; }
       const g = data.garden;
       Object.assign(state, blank(), {
         id: uid(), name: g.name || 'Imported garden', frost: g.frost || '', grid: g.grid !== false,
@@ -1072,9 +1134,38 @@
           x: s.x, y: s.y, wFt: s.w, hFt: s.w, rot: 0, flip: false, z: i + 1
         });
       });
-      if (state.pieces[0]) state.selectedPiece = state.pieces[0].id;
+      placeLibraryArrangement();
+      if (state.pieces.length) state.selectedPiece = state.pieces[state.pieces.length - 1].id;
       render();
-      setHint('Placement demo. These pictures are drawings. Your own photos stay in this browser.');
+      setHint('Placement demo. The plant photos are generated for this site. The yard drawing is not a photograph.');
+    });
+  }
+
+  function placeLibraryArrangement() {
+    const items = window.YardPhotos && YardPhotos.items;
+    if (!items || !items.length) return;
+    const byName = {};
+    items.forEach(function (item) { byName[item.name] = item; });
+    const spots = [
+      ['Glass vase', 2.0, 2.2, 1.3],
+      ['Rose', 1.3, 1.4, 1.5],
+      ['Tulip', 2.8, 1.4, 1.3],
+      ['Hydrangea', 3.5, 2.3, 1.6],
+      ['Daisy', 2.0, 3.0, 1.1],
+      ['Lavender', 8.4, 3.8, 2.1],
+      ['Boxwood', 11.5, 3.2, 3.0],
+      ['Daylily', 7.2, 6.2, 2.0],
+      ['Coneflower', 9.6, 6.5, 2.0]
+    ];
+    spots.forEach(function (spot, i) {
+      const item = byName[spot[0]];
+      if (!item) return;
+      const aspect = item.w ? item.h / item.w : 1.2;
+      state.pieces.push({
+        id: uid(), kind: 'library', libraryId: item.id, stampId: null, plantId: null,
+        x: spot[1], y: spot[2], wFt: spot[3], hFt: spot[3] * aspect,
+        rot: 0, flip: false, z: 30 + i
+      });
     });
   }
 
@@ -1138,6 +1229,28 @@
     renderBoard();
   }
 
+  function howPrefs() {
+    try { return JSON.parse(localStorage.getItem('yardgrid-hide-how') || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function syncHow() {
+    const hide = howPrefs();
+    const grid = $('howGrid');
+    const place = $('howPlace');
+    if (!grid || !place) return;
+    grid.hidden = state.mode === 'place';
+    place.hidden = state.mode !== 'place';
+    grid.classList.toggle('collapsed', !!hide.grid);
+    place.classList.toggle('collapsed', !!hide.place);
+    $('howGridToggle').textContent = hide.grid ? 'Show video' : 'Hide video';
+    $('howPlaceToggle').textContent = hide.place ? 'Show video' : 'Hide video';
+  }
+  function toggleHow(which) {
+    const hide = howPrefs();
+    hide[which] = !hide[which];
+    try { localStorage.setItem('yardgrid-hide-how', JSON.stringify(hide)); } catch (e) { /* the choice is optional */ }
+    syncHow();
+  }
   function setPlantsOpen(open) {
     $('library').classList.toggle('open', open);
     $('plantsToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -1160,6 +1273,8 @@
         ? 'Add pictures, then drag them on the yard. Select one and pinch with two fingers to resize and turn it.'
         : 'Grid plan. Beds and spacing are back.');
     }
+    $('howGridToggle').addEventListener('click', function () { toggleHow('grid'); });
+    $('howPlaceToggle').addEventListener('click', function () { toggleHow('place'); });
     $('modeGrid').addEventListener('click', function () { setMode('grid'); });
     $('modePlace').addEventListener('click', function () { setMode('place'); });
     $('stampFile').addEventListener('change', function (e) { addStampFiles(e.target.files); e.target.value = ''; });
@@ -1175,7 +1290,7 @@
     $('pieceDup').addEventListener('click', function () {
       withPiece(function (piece) {
         state.pieces.push({
-          id: uid(), kind: piece.kind, stampId: piece.stampId, plantId: piece.plantId,
+          id: uid(), kind: piece.kind, stampId: piece.stampId, plantId: piece.plantId, libraryId: piece.libraryId,
           x: piece.x + 0.6, y: piece.y + 0.6, wFt: piece.wFt, hFt: piece.hFt,
           rot: piece.rot, flip: piece.flip, z: nextZ()
         });
