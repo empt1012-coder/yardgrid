@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Plan a bed · Bloom &amp; Bed Garden</title>
   <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/site.css">
@@ -66,9 +66,12 @@
           <button type="button" id="modeGrid" class="on">Grid plan</button>
           <button type="button" id="modePlace">Placement</button>
         </div>
-        <div class="row">
-          <label>Garden name <input id="gardenName" type="text" maxlength="60"></label>
-          <label>Last spring frost <input id="frost" type="date"></label>
+        <div class="meta-box" id="metaBox">
+          <button type="button" class="photo-toggle" id="metaToggle" aria-expanded="false" aria-controls="metaRow">Name and frost date</button>
+          <div class="row meta-row" id="metaRow">
+            <label>Garden name <input id="gardenName" type="text" maxlength="60"></label>
+            <label>Last spring frost <input id="frost" type="date"></label>
+          </div>
         </div>
         <div class="row" id="bedRow">
           <label>Bed width (ft) <input id="bedW" type="number" min="1" max="20" value="4"></label>
@@ -87,7 +90,7 @@
             <button type="button" id="pieceBack">Back</button>
             <button type="button" id="pieceDelete">Delete</button>
           </div>
-          <p class="muted">PNG keeps a clear background. Drag a picture from the list onto the yard, then drag it to move it. On a phone, select it and pinch with two fingers to resize and turn it. On a wide screen, use the handles.</p>
+          <p class="muted">PNG keeps a clear background. Drag a picture onto the yard. Drag a corner to resize it, or pinch with two fingers.</p>
         </div>
         <div class="photo-panel" id="photoPanel">
           <button type="button" class="photo-toggle" id="photoToggle" aria-expanded="false" aria-controls="photoBody">Yard photo</button>
@@ -100,7 +103,7 @@
           <button type="button" id="takePhoto" title="Take a picture with this computer's camera"><span class="wide">Take photo</span><span class="narrow">Camera</span></button>
           <button type="button" id="removePhoto" title="Remove the yard photo"><span class="wide">Remove photo</span><span class="narrow">Remove</span></button>
         </div>
-        <div class="row">
+        <div class="row slider-row">
           <label>Photo opacity <input id="opacity" type="range" min="0.15" max="1" step="0.01" value="0.62"></label>
           <label>Photo size (ft wide) <input id="photoSize" type="range" min="4" max="80" step="0.5" value="18"></label>
           <label class="grid-toggle">Grid <input id="gridOn" type="checkbox" checked></label>

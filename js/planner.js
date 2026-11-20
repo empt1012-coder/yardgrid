@@ -308,6 +308,7 @@
       const aspect = item.w ? item.h / item.w : 1;
       const wFt = item.category === 'pots' ? 1.5 : (item.category === 'flowers' ? 1.7 : 2.6);
       addPiece({ kind: 'library', libraryId: item.id, x: spot.x, y: spot.y, wFt: wFt, hFt: Math.max(0.4, wFt * aspect) });
+      closePlantsOnPhone();
       setHint(item.name + ' is on the yard. Drag it to move it.');
     });
     $('libGrid').addEventListener('pointercancel', function (e) {
@@ -629,6 +630,7 @@
       const spot = dropFeet(e, moved);
       if (!spot) { setHint('Drop the picture on the yard.'); return; }
       addPiece({ kind: 'icon', plantId: id, x: spot.x, y: spot.y, wFt: 1.6, hFt: 1.6 });
+      closePlantsOnPhone();
       setHint('Icon is on the yard. Drag it to move it.');
       return;
     }
@@ -636,6 +638,7 @@
       state.armed = state.armed === id ? null : id;
       state.tool = 'pan';
       render();
+      closePlantsOnPhone();
       setHint(state.armed ? 'Tap an empty square to place ' + byId[id].name + '.' : 'Select a plant.');
       return;
     }
@@ -1456,21 +1459,30 @@
     try { return JSON.parse(localStorage.getItem('yardgrid-hide-how') || '{}') || {}; }
     catch (e) { return {}; }
   }
+  function phoneLayout() {
+    return window.matchMedia('(max-width: 980px)').matches;
+  }
+  function howHidden(which, hide) {
+    if (typeof hide[which] === 'boolean') return hide[which];
+    return phoneLayout();
+  }
   function syncHow() {
     const hide = howPrefs();
     const grid = $('howGrid');
     const place = $('howPlace');
     if (!grid || !place) return;
+    const gridHide = howHidden('grid', hide);
+    const placeHide = howHidden('place', hide);
     grid.hidden = state.mode === 'place';
     place.hidden = state.mode !== 'place';
-    grid.classList.toggle('collapsed', !!hide.grid);
-    place.classList.toggle('collapsed', !!hide.place);
-    $('howGridToggle').textContent = hide.grid ? 'Show video' : 'Hide video';
-    $('howPlaceToggle').textContent = hide.place ? 'Show video' : 'Hide video';
+    grid.classList.toggle('collapsed', gridHide);
+    place.classList.toggle('collapsed', placeHide);
+    $('howGridToggle').textContent = gridHide ? 'Show video' : 'Hide video';
+    $('howPlaceToggle').textContent = placeHide ? 'Show video' : 'Hide video';
   }
   function toggleHow(which) {
     const hide = howPrefs();
-    hide[which] = !hide[which];
+    hide[which] = !howHidden(which, hide);
     try { localStorage.setItem('yardgrid-hide-how', JSON.stringify(hide)); } catch (e) { /* the choice is optional */ }
     syncHow();
   }
@@ -1478,11 +1490,19 @@
     $('library').classList.toggle('open', open);
     $('plantsToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
   }
+  function closePlantsOnPhone() {
+    if (phoneLayout()) setPlantsOpen(false);
+  }
   function wire() {
     $('photoToggle').addEventListener('click', function () {
       const open = $('photoPanel').classList.toggle('open');
       $('photoToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
     });
+    $('metaToggle').addEventListener('click', function () {
+      const open = $('metaBox').classList.toggle('open');
+      $('metaToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    window.addEventListener('resize', syncHow);
     if (location.hash === '#photo') {
       $('photoPanel').classList.add('open');
       $('photoToggle').setAttribute('aria-expanded', 'true');
@@ -1523,6 +1543,7 @@
       if (!spot) { setHint('Drop the picture on the yard.'); return; }
       const aspect = stamp.w ? stamp.h / stamp.w : 1;
       addPiece({ kind: 'stamp', stampId: stamp.id, x: spot.x, y: spot.y, wFt: 2.4, hFt: 2.4 * aspect });
+      closePlantsOnPhone();
       setHint('Picture is on the yard. Drag it to move it.');
     });
     $('stampTray').addEventListener('pointercancel', function (e) {

@@ -141,6 +141,7 @@ label.file { display: inline-flex; align-items: center; justify-content: center;
 .print-piece { position: absolute; }
 .print-piece img { width: 100%; height: 100%; object-fit: contain; }
 .narrow, .plants-close, .plants-toggle, .photo-toggle { display: none; }
+.meta-box { display: contents; }
 .photo-body { display: flex; flex-direction: column; gap: 8px; }
 .library-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .library-head h2 { margin: 0 0 8px; }
@@ -172,20 +173,50 @@ label.file { display: inline-flex; align-items: center; justify-content: center;
   .site-header, .site-footer { padding: 10px 12px; }
   .nav { width: 100%; gap: 10px; font-size: 0.9rem; }
   .hero { padding: 18px 14px; }
+  .plan-page .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    padding-top: calc(8px + env(safe-area-inset-top));
+  }
+  .plan-page .nav { flex: 1 0 100%; min-width: 0; flex-wrap: wrap; gap: 0 14px; }
+  .plan-page .nav a { flex: none; min-height: 36px; }
 }
 @media (max-width: 980px) {
   html, body { overflow-x: hidden; max-width: 100%; }
   .steps { grid-template-columns: 1fr; }
-  .plan-page { padding-bottom: 72px; }
-  .plan-app { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; width: 100%; padding: 8px; }
+  .plan-page { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+  .plan-page .how { margin: 6px 8px 0; padding: 8px 10px; }
+  .plan-page .how video { max-height: 200px; }
+  .plan-app { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; width: 100%; padding: 8px; gap: 8px; }
   .library, .board-wrap, .side { grid-column: 1; grid-row: auto; width: 100%; max-width: 100%; }
-  .board-wrap { order: -1; }
-  #viewport { width: 100%; min-height: 52vh; }
-  .toolbar .row, .side .row {
+  .board-wrap { order: -1; display: flex; flex-direction: column; gap: 8px; }
+  .board-wrap > .toolbar { display: contents; }
+  .mode-row { order: 1; }
+  #bedRow { order: 2; }
+  #viewport {
+    order: 3;
+    width: 100%;
+    flex: none;
+    min-height: 200px;
+    height: calc(100vh - 460px);
+    height: calc(100dvh - 460px);
+  }
+  .placing #viewport { height: calc(100vh - 430px); height: calc(100dvh - 430px); }
+  #hint { order: 4; margin: 0; }
+  #placeBar { order: 5; }
+  #photoPanel { order: 6; }
+  .meta-box { display: block; order: 7; }
+  .meta-box:not(.open) #metaRow { display: none; }
+  .toolbar .row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: stretch;
   }
+  .side .row { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+  .slider-row { grid-template-columns: minmax(0, 1fr); }
   .toolbar .row > *, .side .row > * { min-width: 0; max-width: 100%; }
   #addBed { grid-column: 1 / -1; }
   .toolbar button, .toolbar label.file, .side button, .side label.file, .tabs button,
@@ -195,12 +226,13 @@ label.file { display: inline-flex; align-items: center; justify-content: center;
     text-align: center;
   }
   .plant-btn { text-align: left; }
-  input[type="text"], input[type="number"], input[type="date"], input[type="search"], input[type="email"], input[type="range"], select {
+  input, select, textarea { font-size: 16px; }
+  input[type="text"], input[type="number"], input[type="date"], input[type="search"], input[type="email"], input[type="password"], input[type="range"], select {
     width: 100%;
     max-width: 100%;
     min-width: 0;
   }
-  input[type="text"], input[type="number"], input[type="date"], input[type="search"], select { min-height: 44px; }
+  input[type="text"], input[type="number"], input[type="date"], input[type="search"], input[type="email"], input[type="password"], select { min-height: 44px; }
   .photo-toggle {
     display: flex;
     width: 100%;
@@ -212,16 +244,17 @@ label.file { display: inline-flex; align-items: center; justify-content: center;
     padding: 8px 12px;
   }
   .photo-toggle::after { content: "Show"; color: var(--muted); font-size: 0.85rem; }
-  .photo-panel.open .photo-toggle::after { content: "Hide"; }
+  .photo-panel.open .photo-toggle::after, .meta-box.open .photo-toggle::after { content: "Hide"; }
   .photo-body { display: none; }
   .photo-panel.open .photo-body { display: flex; }
+  .place-bar .muted { margin: 0; }
   .plants-toggle {
     display: block;
     position: fixed;
     z-index: 20;
     left: 8px;
     right: 8px;
-    bottom: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
     min-height: 48px;
     border: 0;
     border-radius: 999px;
@@ -237,9 +270,10 @@ label.file { display: inline-flex; align-items: center; justify-content: center;
     left: 0;
     right: 0;
     bottom: 0;
-    max-height: 72vh;
+    max-height: 72dvh;
     overflow: auto;
     border-radius: 16px 16px 0 0;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
   }
   .library.open { display: block; }
   .plants-close { display: inline-flex; align-items: center; margin-bottom: 8px; }
@@ -248,7 +282,23 @@ label.file { display: inline-flex; align-items: center; justify-content: center;
   input[type="range"] { min-height: 44px; }
   .grid-toggle { display: flex; align-items: center; gap: 8px; min-height: 44px; }
   .grid-toggle input[type="checkbox"] { width: 22px; height: 22px; }
-  .piece-handle { display: none; }
+  .piece-handle { width: 44px; height: 44px; background: transparent; border: 0; }
+  .piece-handle::after {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 13px;
+    top: 13px;
+    border-radius: 50%;
+    border: 2px solid var(--green);
+    background: white;
+  }
+  .piece-handle.se { right: -22px; bottom: -22px; }
+  .piece-handle.rot { top: -46px; margin-left: -22px; }
+  .camera-box { align-items: end; padding: 10px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+  .camera-panel video { max-height: 52dvh; }
+  .camera-panel .row { display: grid; grid-template-columns: 1fr 1fr; }
 }
 @media print {
   .site-header, .site-footer, .plan-app, .how, .plants-toggle, .camera-box { display: none !important; }
