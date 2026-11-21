@@ -1,7 +1,12 @@
 /* Sign-in and Bloom & Bed Plus. The planner still works when this is signed out. */
 (function () {
   var TOKEN = 'yardgrid-auth';
+  var pendingPlan = '';
   function $(id) { return document.getElementById(id); }
+  function on(id, event, fn) {
+    var el = $(id);
+    if (el) el.addEventListener(event, fn);
+  }
   function auth() {
     try { return JSON.parse(localStorage.getItem(TOKEN) || 'null'); }
     catch (e) { return null; }
@@ -58,12 +63,17 @@
     var el = $('accountStatus');
     if (el) el.textContent = text;
   }
+  function showPlusMember(isPlus) {
+    if ($('plusBuy')) $('plusBuy').hidden = !!isPlus;
+    if ($('plusManage')) $('plusManage').hidden = !isPlus;
+  }
   async function refreshStatus() {
     if (!auth()) {
-      status('Free. One garden plan and one arrangement stay in this browser.');
+      if ($('accountBox')) status('Free. One garden plan and one arrangement stay in this browser.');
       if ($('accountSignedIn')) $('accountSignedIn').hidden = true;
-      if ($('accountSignedOut')) $('accountSignedOut').hidden = false;
-      return;
+      if ($('accountSignedOut') && $('accountBox')) $('accountSignedOut').hidden = false;
+      showPlusMember(false);
+      return null;
     }
     if ($('accountSignedOut')) $('accountSignedOut').hidden = true;
     if ($('accountSignedIn')) $('accountSignedIn').hidden = false;
@@ -74,10 +84,15 @@
         ? 'Bloom & Bed Plus is on. Saves in your account open on any device.'
         : 'Signed in. Plus adds cloud save. The tools stay free either way.');
       if ($('cloudSave')) $('cloudSave').disabled = !me.plus;
-      var list = await api('/api/gardens', { headers: authHeaders(false) });
-      renderCloud(list.gardens || []);
+      showPlusMember(!!me.plus);
+      if ($('cloudList')) {
+        var list = await api('/api/gardens', { headers: authHeaders(false) });
+        renderCloud(list.gardens || []);
+      }
+      return me;
     } catch (err) {
       status(err.message);
+      return null;
     }
   }
   function renderCloud(items) {
@@ -133,10 +148,40 @@
     await window.YardBridge.applyCloud(record.garden, false);
     status(record.plus ? 'Opened from your account.' : 'Opened. Plus has ended, so this copy is read-only in the account. Export keeps a file.');
   }
+  function askToSignIn() {
+    status('Sign in or create an account. Checkout will continue after that.');
+    if ($('accountBox')) $('accountBox').open = true;
+    if ($('accountSignedOut')) $('accountSignedOut').hidden = false;
+    if ($('accountEmailInput')) $('accountEmailInput').focus();
+  }
+  function startCheckout(plan) {
+    pendingPlan = plan || pendingPlan;
+    if (!pendingPlan) return;
+    if (!auth()) { askToSignIn(); return; }
+    status('Opening checkout…');
+    api('/api/checkout', { method: 'POST', headers: authHeaders(true), body: JSON.stringify({ plan: pendingPlan }) })
+      .then(function (data) {
+        pendingPlan = '';
+        location.href = data.url;
+      })
+      .catch(function (err) { status(err.message); });
+  }
+  function startPortal() {
+    api('/api/portal', { method: 'POST', headers: authHeaders(true), body: '{}' })
+      .then(function (data) { location.href = data.url; })
+      .catch(function (err) { status(err.message); });
+  }
+  function afterSignIn(me) {
+    if (!pendingPlan) return;
+    if (me && me.plus) {
+      pendingPlan = '';
+      status('Bloom & Bed Plus is already on this account.');
+      return;
+    }
+    startCheckout(pendingPlan);
+  }
   function wire() {
-    var form = $('accountForm');
-    if (!form) return;
-    form.addEventListener('submit', function (e) {
+    on('accountForm', 'submit', function (e) {
       e.preventDefault();
       var email = $('accountEmailInput').value.trim();
       var password = $('accountPasswordInput').value;
@@ -151,12 +196,12 @@
         }
         saveAuth(data.access_token ? data : { access_token: data.token }, email);
         if (data.access_token) saveAuth(data, email);
-        refreshStatus();
+        refreshStatus().then(afterSignIn);
       }).catch(function (err) { status(err.message); });
     });
-    $('accountSignOut').addEventListener('click', function () { clearAuth(); refreshStatus(); });
-    $('cloudSave').addEventListener('click', function () { saveToAccount().catch(function (err) { status(err.message); }); });
-    $('cloudList').addEventListener('click', function (e) {
+    on('accountSignOut', 'click', function () { clearAuth(); refreshStatus(); });
+    on('cloudSave', 'click', function () { saveToAccount().catch(function (err) { status(err.message); }); });
+    on('cloudList', 'click', function (e) {
       var open = e.target.getAttribute && e.target.getAttribute('data-open');
       var share = e.target.getAttribute && e.target.getAttribute('data-share');
       if (open) openCloud(open).catch(function (err) { status(err.message); });
@@ -165,26 +210,16 @@
         navigator.clipboard.writeText(link).then(function () { status('View-only link copied.'); }, function () { status(link); });
       }
     });
-    $('plusMonthly').addEventListener('click', function () { startCheckout('month'); });
-    $('plusYearly').addEventListener('click', function () { startCheckout('year'); });
-    $('plusPortal').addEventListener('click', function () {
-      api('/api/portal', { method: 'POST', headers: authHeaders(true), body: '{}' })
-        .then(function (data) { location.href = data.url; })
-        .catch(function (err) { status(err.message); });
-    });
-    $('accountDelete').addEventListener('click', function () {
+    on('plusMonthly', 'click', function () { startCheckout('month'); });
+    on('plusYearly', 'click', function () { startCheckout('year'); });
+    on('plusPortal', 'click', startPortal);
+    on('accountDelete', 'click', function () {
       if (!confirm('Delete the account and the gardens stored in it? This cannot be undone. A file you already exported stays on your device.')) return;
       api('/api/account', { method: 'DELETE', headers: authHeaders(false) })
         .then(function () { clearAuth(); refreshStatus(); status('The account and its cloud saves were deleted.'); })
         .catch(function (err) { status(err.message); });
     });
     refreshStatus();
-  }
-  function startCheckout(plan) {
-    if (!auth()) { status('Sign in first. Then you can start Plus.'); $('accountBox').open = true; return; }
-    api('/api/checkout', { method: 'POST', headers: authHeaders(true), body: JSON.stringify({ plan: plan }) })
-      .then(function (data) { location.href = data.url; })
-      .catch(function (err) { status(err.message); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
   else wire();
