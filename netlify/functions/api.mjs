@@ -204,12 +204,17 @@ async function findByShare(token) {
   return null;
 }
 
+function stripeKeyOk(key) {
+  return key.indexOf("sk_test_") === 0 || key.indexOf("rk_test_") === 0 ||
+    key.indexOf("sk_live_") === 0 || key.indexOf("rk_live_") === 0;
+}
+
 async function checkout(req, user) {
   const key = process.env.STRIPE_SECRET_KEY || "";
   const body = await req.json().catch(function () { return {}; });
   const price = body.plan === "year" ? process.env.STRIPE_PRICE_YEARLY : process.env.STRIPE_PRICE_MONTHLY;
-  if (!key || !price || (key.indexOf("sk_test_") !== 0 && key.indexOf("rk_test_") !== 0)) {
-    return json({ error: "Plus checkout is not turned on yet. It stays in Stripe test mode until Emilio switches it on." }, 503);
+  if (!key || !price || !stripeKeyOk(key)) {
+    return json({ error: "Plus checkout is not turned on yet." }, 503);
   }
   const account = await accountOf(user.id);
   const params = new URLSearchParams();
@@ -237,12 +242,13 @@ async function checkout(req, user) {
 async function portal(req, user) {
   const key = process.env.STRIPE_SECRET_KEY || "";
   const account = await accountOf(user.id);
-  if (!key || (key.indexOf("sk_test_") !== 0 && key.indexOf("rk_test_") !== 0) || !account.stripeCustomerId) {
+  if (!key || !stripeKeyOk(key) || !account.stripeCustomerId) {
     return json({ error: "Subscription management is not available yet." }, 503);
   }
   const params = new URLSearchParams();
   params.set("customer", account.stripeCustomerId);
   params.set("return_url", PUBLIC_SITE + "/plan.html");
+  if (process.env.STRIPE_PORTAL_CONFIGURATION) params.set("configuration", process.env.STRIPE_PORTAL_CONFIGURATION);
   const res = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
     method: "POST",
     headers: { Authorization: "Bearer " + key, "Content-Type": "application/x-www-form-urlencoded" },
