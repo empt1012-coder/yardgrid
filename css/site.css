@@ -52,7 +52,7 @@ h2 { font-size: 1.35rem; margin: 0 0 8px; }
 .guide-list { display: grid; gap: 12px; margin-top: 18px; }
 .guide-list a { display: block; background: var(--card); border-radius: 16px; padding: 14px 16px; text-decoration: none; box-shadow: var(--shadow); }
 label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; }
-input[type="text"], input[type="number"], input[type="date"], input[type="email"], input[type="search"] {
+input[type="text"], input[type="number"], input[type="date"], input[type="email"], input[type="search"], input[type="password"], select {
   width: 100%; border: 1px solid var(--line); background: white; border-radius: 10px; padding: 8px 10px;
 }
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
@@ -352,3 +352,8 @@ label.file { display: inline-flex; align-items: center; justify-content: center;
   .gallery-home-row { grid-template-columns: 1fr 1fr; }
   .gallery-shot img, .gallery-home-row img { height: 160px; }
 }
+
+.plus-actions { margin: 16px 0; }
+.plus-actions .btn { text-align: center; }
+#accountForm { max-width: 360px; }
+#accountForm .btn { margin-top: 8px; }
