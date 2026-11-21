@@ -2,7 +2,7 @@
 
 A static garden planner. You can lay out beds on a 1-foot grid, and you can arrange flowers and plants on a photo of your space. Plant counts, days, and frost dates come from the extension pages in `SOURCES.md`.
 
-The public site is https://bloomandbedgarden.com. The address lives in `js/config.js` as `SITE_URL`. The GitHub repo and the Netlify project are still named yardgrid. https://yardgrid.netlify.app still opens the same site. Saved gardens use the same browser keys as before so older files still open.
+The public site is https://bloomandbedgarden.com. The address lives in `js/config.js` as `SITE_URL`. The GitHub repo and the Netlify project are still named yardgrid. https://yardgrid.netlify.app redirects there. Saved gardens use the same browser keys as before so older files still open.
 
 ## Open it
 

@@ -5,6 +5,7 @@ const accounts = () => getStore({ name: "yardgrid-accounts", consistency: "stron
 const gardens = () => getStore({ name: "yardgrid-gardens", consistency: "strong" });
 const files = () => getStore({ name: "yardgrid-files", consistency: "strong" });
 
+const PUBLIC_SITE = "https://bloomandbedgarden.com";
 function siteOrigin(req) {
   return new URL(req.url).origin;
 }
@@ -215,8 +216,8 @@ async function checkout(req, user) {
   params.set("mode", "subscription");
   params.set("line_items[0][price]", price);
   params.set("line_items[0][quantity]", "1");
-  params.set("success_url", siteOrigin(req) + "/plan.html?plus=1");
-  params.set("cancel_url", siteOrigin(req) + "/plus.html");
+  params.set("success_url", PUBLIC_SITE + "/plan.html?plus=1");
+  params.set("cancel_url", PUBLIC_SITE + "/plus.html");
   params.set("client_reference_id", user.id);
   params.set("metadata[userId]", user.id);
   params.set("subscription_data[metadata][userId]", user.id);
@@ -241,7 +242,7 @@ async function portal(req, user) {
   }
   const params = new URLSearchParams();
   params.set("customer", account.stripeCustomerId);
-  params.set("return_url", siteOrigin(req) + "/plan.html");
+  params.set("return_url", PUBLIC_SITE + "/plan.html");
   const res = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
     method: "POST",
     headers: { Authorization: "Bearer " + key, "Content-Type": "application/x-www-form-urlencoded" },

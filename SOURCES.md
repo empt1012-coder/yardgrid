@@ -111,3 +111,7 @@ Flowers with no bloom month on these pages are not on the chart.
   https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/upper-midwest-home-garden-care-calendar
 
 No sourced “grows well together” companion pair was added. The marigold and bean notes above are the whole companion chart.
+
+## Plant library pictures
+
+The pictures in `images/library/` are generated for this site. They are not photographs of a real garden, and they are not stock, licensed, or Creative Commons photos. Each card says “(generated image)”. They are examples of the named plant or object. They are not a source for spacing, bloom months, or planting dates.

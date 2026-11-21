@@ -294,7 +294,7 @@
     });
     grid.innerHTML = shown.map(function (item) {
       const on = item.id === focusPhoto ? ' on' : '';
-      return '<button type="button" class="lib-card' + on + '" data-lib="' + esc(item.id) + '"><img alt="" loading="lazy" src="' + esc(item.thumb) + '"><span><strong>' + esc(item.name) + '</strong><span>' + esc(item.tag) + '</span></span></button>';
+      return '<button type="button" class="lib-card' + on + '" data-lib="' + esc(item.id) + '"><img alt="' + esc(item.name) + ' (generated image)" loading="lazy" src="' + esc(item.thumb) + '"><span><strong>' + esc(item.name) + '</strong><span>' + esc(item.tag) + '</span></span></button>';
     }).join('') || '<p class="muted">No photos match.</p>';
   }
   function syncPhotoLibrary() {
@@ -323,11 +323,13 @@
       if (!btn || (e.button != null && e.button !== 0)) return;
       e.preventDefault();
       drag = { kind: 'libpic', id: btn.getAttribute('data-lib'), x: e.clientX, y: e.clientY, moved: false, pointer: e.pointerId };
-      holdPointer(btn, e.pointerId);
     });
     $('libGrid').addEventListener('pointermove', function (e) {
       if (!drag || drag.kind !== 'libpic' || drag.pointer !== e.pointerId) return;
-      if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 8) drag.moved = true;
+      if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 8) {
+        drag.moved = true;
+        holdPointer(e.currentTarget, e.pointerId);
+      }
     });
     $('libGrid').addEventListener('pointerup', function (e) {
       if (!drag || drag.kind !== 'libpic' || drag.pointer !== e.pointerId) return;
@@ -423,7 +425,7 @@
         if (p.kind === 'icon' && byId[p.plantId]) {
           html += '<div class="icon-face" style="font-size:' + Math.max(16, Math.round(ph * 0.62)) + 'px">' + byId[p.plantId].emoji + '</div>';
         } else if (p.kind === 'library' && libraryItem(p.libraryId)) {
-          html += '<img alt="" src="' + esc(libraryItem(p.libraryId).full) + '">';
+          html += '<img alt="' + esc(libraryItem(p.libraryId).name) + ' (generated image)" src="' + esc(libraryItem(p.libraryId).full) + '">';
         } else if (stampUrls[p.stampId]) {
           html += '<img alt="" src="' + stampUrls[p.stampId] + '">';
         }
@@ -599,8 +601,10 @@
     syncHow();
     const head = document.querySelector('.library-head h2');
     if (head) head.textContent = state.mode === 'place' ? 'Pictures' : 'Plants';
+    const plantsLabel = state.mode === 'place' ? 'Pictures' : 'Plants';
     const plantsBtn = $('plantsToggle');
-    if (plantsBtn) plantsBtn.textContent = state.mode === 'place' ? 'Pictures' : 'Plants';
+    if (plantsBtn) plantsBtn.textContent = plantsLabel;
+    if ($('plantsToolbar')) $('plantsToolbar').textContent = plantsLabel;
     $('toolPhoto').classList.toggle('on', state.tool === 'photo');
     $('toolScale').classList.toggle('on', state.tool === 'scale');
     $('toolPan').classList.toggle('on', state.tool === 'pan');
@@ -639,6 +643,7 @@
     state.selectedBed = bed.id;
     persist();
     render();
+    if (phoneLayout()) setPlantsOpen(true);
     setHint('Drag the brown bar to move the bed. Tap a plant, then tap a square.');
   }
 
@@ -648,11 +653,13 @@
     e.preventDefault();
     const id = btn.getAttribute('data-plant');
     drag = { kind: 'lib', id: id, x: e.clientX, y: e.clientY, moved: false, pointer: e.pointerId };
-    holdPointer(btn, e.pointerId);
   }
   function onLibraryPointerMove(e) {
     if (!drag || drag.kind !== 'lib' || drag.pointer !== e.pointerId) return;
-    if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 8) drag.moved = true;
+    if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 8) {
+      drag.moved = true;
+      holdPointer(e.target, e.pointerId);
+    }
   }
   function onLibraryPointerUp(e) {
     if (!drag || drag.kind !== 'lib') return;
@@ -753,6 +760,7 @@
         place(bedById(parts[0]), Number(parts[1]), Number(parts[2]), state.armed);
       } else {
         setHint('Tap a plant in the list, then tap an empty square.');
+        if (phoneLayout()) setPlantsOpen(true);
       }
       return;
     }
@@ -1521,7 +1529,9 @@
   }
   function setPlantsOpen(open) {
     $('library').classList.toggle('open', open);
+    document.body.classList.toggle('plants-open', open);
     $('plantsToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+    if ($('plantsToolbar')) $('plantsToolbar').setAttribute('aria-expanded', open ? 'true' : 'false');
   }
   function closePlantsOnPhone() {
     if (phoneLayout()) setPlantsOpen(false);
@@ -1559,11 +1569,13 @@
       if (!btn || (e.button != null && e.button !== 0)) return;
       e.preventDefault();
       drag = { kind: 'stamp', id: btn.getAttribute('data-stamp'), x: e.clientX, y: e.clientY, moved: false, pointer: e.pointerId };
-      holdPointer(btn, e.pointerId);
     });
     $('stampTray').addEventListener('pointermove', function (e) {
       if (!drag || drag.kind !== 'stamp' || drag.pointer !== e.pointerId) return;
-      if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 8) drag.moved = true;
+      if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) > 8) {
+        drag.moved = true;
+        holdPointer(e.currentTarget, e.pointerId);
+      }
     });
     $('stampTray').addEventListener('pointerup', function (e) {
       if (!drag || drag.kind !== 'stamp' || drag.pointer !== e.pointerId) return;
@@ -1603,7 +1615,9 @@
     });
     $('pieceDelete').addEventListener('click', deletePiece);
     $('saveImage').addEventListener('click', function () { saveMockup(); });
-    $('plantsToggle').addEventListener('click', function () { setPlantsOpen(!$('library').classList.contains('open')); });
+    function togglePlants() { setPlantsOpen(!$('library').classList.contains('open')); }
+    $('plantsToggle').addEventListener('click', togglePlants);
+    $('plantsToolbar').addEventListener('click', togglePlants);
     $('plantsClose').addEventListener('click', function () { setPlantsOpen(false); });
     $('filter').addEventListener('input', renderLibrary);
     $('plantList').addEventListener('pointerdown', onLibraryPointerDown);

@@ -141,7 +141,7 @@ label.file { display: inline-flex; align-items: center; justify-content: center;
 .placing #bedRow, .placing #removePlant, .placing #clearBed { display: none; }
 .print-piece { position: absolute; }
 .print-piece img { width: 100%; height: 100%; object-fit: contain; }
-.narrow, .plants-close, .plants-toggle, .photo-toggle { display: none; }
+.narrow, .plants-close, .plants-toggle, .plants-toolbar, .photo-toggle { display: none; }
 .meta-box { display: contents; }
 .photo-body { display: flex; flex-direction: column; gap: 8px; }
 .library-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -186,7 +186,8 @@ label.file { display: inline-flex; align-items: center; justify-content: center;
   .plan-page .nav a { flex: none; min-height: 36px; }
 }
 @media (max-width: 980px) {
-  html, body { overflow-x: hidden; max-width: 100%; }
+  html, body { overflow-x: clip; max-width: 100%; }
+  body.plants-open { overflow: hidden; }
   .steps { grid-template-columns: 1fr; }
   .plan-page { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
   .plan-page .how { margin: 6px 8px 0; padding: 8px 10px; }
@@ -249,10 +250,18 @@ label.file { display: inline-flex; align-items: center; justify-content: center;
   .photo-body { display: none; }
   .photo-panel.open .photo-body { display: flex; }
   .place-bar .muted { margin: 0; }
+  .plants-toolbar {
+    display: block;
+    grid-column: 1 / -1;
+    background: var(--green);
+    color: white;
+    border-color: var(--green);
+    font-weight: 650;
+  }
   .plants-toggle {
     display: block;
     position: fixed;
-    z-index: 20;
+    z-index: 25;
     left: 8px;
     right: 8px;
     bottom: calc(8px + env(safe-area-inset-bottom));
@@ -264,17 +273,21 @@ label.file { display: inline-flex; align-items: center; justify-content: center;
     font-weight: 650;
     box-shadow: var(--shadow);
   }
+  .plant-btn, .lib-card { touch-action: manipulation; }
   .library {
     display: none;
     position: fixed;
-    z-index: 30;
+    z-index: 40;
     left: 0;
     right: 0;
     bottom: 0;
-    max-height: 72dvh;
+    max-height: 78dvh;
+    min-height: 42dvh;
     overflow: auto;
+    background: var(--card);
     border-radius: 16px 16px 0 0;
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+    -webkit-overflow-scrolling: touch;
   }
   .library.open { display: block; }
   .plants-close { display: inline-flex; align-items: center; margin-bottom: 8px; }

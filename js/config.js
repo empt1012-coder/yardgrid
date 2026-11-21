@@ -12,9 +12,12 @@ window.yardMeta = function (path) {
     el.content = content;
     document.head.appendChild(el);
   }
+  var image = window.SITE_URL + "/images/home-garden.webp";
   meta("property", "og:url", url);
   meta("property", "og:title", document.title);
-  meta("name", "twitter:card", "summary");
+  meta("property", "og:image", image);
+  meta("name", "twitter:card", "summary_large_image");
   meta("name", "twitter:title", document.title);
   meta("name", "twitter:url", url);
+  meta("name", "twitter:image", image);
 };
