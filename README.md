@@ -26,9 +26,9 @@ Then open http://127.0.0.1:8787/
 - Ad spots are HTML comments only. There is no ad code.
 - The visitor-facing name is Bloom & Bed Garden. The live address is https://bloomandbedgarden.com.
 
-## Plus (test mode)
+## Plus
 
-Cloud save is optional. The tools stay free. Sign-in is Netlify Identity. Gardens and pictures are stored with Netlify Blobs through a function. Stripe Checkout and the customer portal run only with test keys in the Netlify environment (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY`). Those keys are not in this repo. The function refuses a key that does not start with `sk_test_`.
+Cloud save is optional. The tools stay free. Sign-in is Netlify Identity. Gardens and pictures are stored with Netlify Blobs through a function. Stripe Checkout and the customer portal use keys in the Netlify environment (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY`, `STRIPE_PORTAL_CONFIGURATION`). Those keys are not in this repo. The function accepts test or live secret and restricted keys (`sk_test_`, `rk_test_`, `sk_live_`, `rk_live_`).
 
 ## What is next
 
