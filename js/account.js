@@ -1,11 +1,16 @@
 /* Sign-in and Bloom & Bed Plus. The planner still works when this is signed out. */
 (function () {
   var TOKEN = 'yardgrid-auth';
-  var pendingPlan = '';
+  var PENDING_KEY = 'yardgrid-pending-plus';
+  var PENDING_MS = 60 * 60 * 1000;
   function $(id) { return document.getElementById(id); }
   function on(id, event, fn) {
     var el = $(id);
     if (el) el.addEventListener(event, fn);
+  }
+  function isPlusPage() {
+    var path = location.pathname || '';
+    return /(?:^|\/)plus\.html$/.test(path);
   }
   function auth() {
     try { return JSON.parse(localStorage.getItem(TOKEN) || 'null'); }
@@ -17,6 +22,29 @@
     }));
   }
   function clearAuth() { localStorage.removeItem(TOKEN); }
+  function savePendingPlan(plan) {
+    if (plan !== 'month' && plan !== 'year') return;
+    try { localStorage.setItem(PENDING_KEY, JSON.stringify({ plan: plan, at: Date.now() })); }
+    catch (e) {}
+  }
+  function clearPendingPlan() {
+    try { localStorage.removeItem(PENDING_KEY); } catch (e) {}
+  }
+  function readPendingPlan() {
+    try {
+      var raw = localStorage.getItem(PENDING_KEY);
+      if (!raw) return '';
+      var data = JSON.parse(raw);
+      if (!data || (data.plan !== 'month' && data.plan !== 'year') || typeof data.at !== 'number' || (Date.now() - data.at) > PENDING_MS) {
+        clearPendingPlan();
+        return '';
+      }
+      return data.plan;
+    } catch (e) {
+      clearPendingPlan();
+      return '';
+    }
+  }
   function authHeaders(json) {
     var a = auth();
     var headers = {};
@@ -63,9 +91,47 @@
     var el = $('accountStatus');
     if (el) el.textContent = text;
   }
+  function showStoredError() {
+    try {
+      var message = sessionStorage.getItem('yardgrid-auth-error');
+      if (!message) return;
+      sessionStorage.removeItem('yardgrid-auth-error');
+      status(message);
+    } catch (e) {}
+  }
   function showPlusMember(isPlus) {
     if ($('plusBuy')) $('plusBuy').hidden = !!isPlus;
     if ($('plusManage')) $('plusManage').hidden = !isPlus;
+  }
+  function userEmail(data) {
+    return (data && (data.email || (data.user && data.user.email))) || '';
+  }
+  async function consumeIdentityHash() {
+    var raw = (location.hash || '').replace(/^#/, '');
+    if (!raw) return false;
+    var params = new URLSearchParams(raw.replace(/;/g, '&'));
+    var confirmation = params.get('confirmation_token');
+    var invite = params.get('invite_token');
+    var access = params.get('access_token');
+    var refresh = params.get('refresh_token');
+    var hashError = params.get('error_description') || params.get('error');
+    if (!confirmation && !invite && !access && !hashError) return false;
+    history.replaceState(null, '', location.pathname + location.search);
+    if (hashError) throw new Error(hashError);
+    if (confirmation || invite) {
+      var data = await identity('/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: confirmation ? 'signup' : 'invite', token: confirmation || invite })
+      });
+      if (data.access_token) saveAuth(data, userEmail(data));
+      return true;
+    }
+    if (access) {
+      saveAuth({ access_token: access, refresh_token: refresh || '' }, params.get('email') || '');
+      return true;
+    }
+    return false;
   }
   async function refreshStatus() {
     if (!auth()) {
@@ -155,32 +221,50 @@
     if ($('accountEmailInput')) $('accountEmailInput').focus();
   }
   function startCheckout(plan) {
-    pendingPlan = plan || pendingPlan;
-    if (!pendingPlan) return;
+    if (plan === 'month' || plan === 'year') savePendingPlan(plan);
+    var chosen = (plan === 'month' || plan === 'year') ? plan : readPendingPlan();
+    if (!chosen) return;
     if (!auth()) { askToSignIn(); return; }
     status('Opening checkout…');
-    api('/api/checkout', { method: 'POST', headers: authHeaders(true), body: JSON.stringify({ plan: pendingPlan }) })
-      .then(function (data) {
-        pendingPlan = '';
-        location.href = data.url;
-      })
-      .catch(function (err) { status(err.message); });
+    clearPendingPlan();
+    api('/api/checkout', { method: 'POST', headers: authHeaders(true), body: JSON.stringify({ plan: chosen }) })
+      .then(function (data) { location.href = data.url; })
+      .catch(function (err) {
+        savePendingPlan(chosen);
+        status(err.message);
+      });
   }
   function startPortal() {
     api('/api/portal', { method: 'POST', headers: authHeaders(true), body: '{}' })
       .then(function (data) { location.href = data.url; })
       .catch(function (err) { status(err.message); });
   }
-  function afterSignIn(me) {
-    if (!pendingPlan) return;
-    if (me && me.plus) {
-      pendingPlan = '';
+  function continuePendingCheckout(me) {
+    var plan = readPendingPlan();
+    if (!plan) return;
+    if (!auth() || !me) return;
+    if (me.plus) {
+      clearPendingPlan();
       status('Bloom & Bed Plus is already on this account.');
       return;
     }
-    startCheckout(pendingPlan);
+    if (!isPlusPage()) {
+      location.replace('/plus.html');
+      return;
+    }
+    startCheckout(plan);
+  }
+  function reportAuthError(err) {
+    var message = err && err.message ? err.message : 'The confirmation link could not be used.';
+    if (isPlusPage() || $('accountStatus')) {
+      status(message);
+      return;
+    }
+    try { sessionStorage.setItem('yardgrid-auth-error', message); } catch (e) {}
+    location.replace('/plus.html');
   }
   function wire() {
+    showStoredError();
     on('accountForm', 'submit', function (e) {
       e.preventDefault();
       var email = $('accountEmailInput').value.trim();
@@ -191,15 +275,17 @@
         : identity('/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'grant_type=password&username=' + encodeURIComponent(email) + '&password=' + encodeURIComponent(password) });
       job.then(function (data) {
         if (creating && !data.access_token) {
-          status('Check your email to confirm the account, then sign in.');
+          status(readPendingPlan()
+            ? "Check your email to confirm, then you'll go straight to checkout."
+            : 'Check your email to confirm the account, then sign in.');
           return;
         }
         saveAuth(data.access_token ? data : { access_token: data.token }, email);
         if (data.access_token) saveAuth(data, email);
-        refreshStatus().then(afterSignIn);
+        refreshStatus().then(continuePendingCheckout);
       }).catch(function (err) { status(err.message); });
     });
-    on('accountSignOut', 'click', function () { clearAuth(); refreshStatus(); });
+    on('accountSignOut', 'click', function () { clearAuth(); clearPendingPlan(); refreshStatus(); });
     on('cloudSave', 'click', function () { saveToAccount().catch(function (err) { status(err.message); }); });
     on('cloudList', 'click', function (e) {
       var open = e.target.getAttribute && e.target.getAttribute('data-open');
@@ -216,10 +302,13 @@
     on('accountDelete', 'click', function () {
       if (!confirm('Delete the account and the gardens stored in it? This cannot be undone. A file you already exported stays on your device.')) return;
       api('/api/account', { method: 'DELETE', headers: authHeaders(false) })
-        .then(function () { clearAuth(); refreshStatus(); status('The account and its cloud saves were deleted.'); })
+        .then(function () { clearAuth(); clearPendingPlan(); refreshStatus(); status('The account and its cloud saves were deleted.'); })
         .catch(function (err) { status(err.message); });
     });
-    refreshStatus();
+    consumeIdentityHash()
+      .then(function () { return refreshStatus(); })
+      .then(continuePendingCheckout)
+      .catch(reportAuthError);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
   else wire();
