@@ -82,12 +82,17 @@ export function subscriptionUpdate(account, sub) {
     plus: open
   });
 }
-/* A subscription that will bill again. Deleting the account while one is running would leave
-   the person paying with no way to sign in and cancel. */
-export function stillBilling(account) {
+/* A subscription Stripe still treats as running, including one set to end at the period end.
+   Deleting the account cancels it first, so nobody keeps paying with no way to sign in. */
+export function hasOpenSubscription(account) {
   if (!account || !account.subscriptionId) return false;
-  if (account.status !== "active" && account.status !== "trialing" && account.status !== "past_due") return false;
-  return !account.cancelAtPeriodEnd;
+  return account.status === "active" || account.status === "trialing" || account.status === "past_due";
+}
+/* A subscription the API may cancel for this user: created by this site's checkout for this user. */
+export function ownsSubscription(sub, userId, account) {
+  if (!sub || !userId || !sub.metadata || sub.metadata.userId !== userId) return false;
+  if (account && account.stripeCustomerId && sub.customer && sub.customer !== account.stripeCustomerId) return false;
+  return true;
 }
 
 export function json(body, status) {

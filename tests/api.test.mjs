@@ -36,13 +36,34 @@ registerHooks({
   }
 });
 
-const USERS = { tokA: { id: 'userA', email: 'a@example.test' }, tokB: { id: 'userB', email: 'b@example.test' } };
+const USERS = {
+  tokA: { id: 'userA', email: 'a@example.test' }, tokB: { id: 'userB', email: 'b@example.test' },
+  tokC: { id: 'userC', email: 'c@example.test' }, tokD: { id: 'userD', email: 'd@example.test' },
+  tokE: { id: 'userE', email: 'e@example.test' }
+};
+/* Stand-in Stripe subscriptions. __cancelFail makes DELETE answer like a key without Subscriptions write. */
+const SUBS = {
+  sub_A: { id: 'sub_A', status: 'active', customer: 'cus_A', metadata: { userId: 'userA' } },
+  sub_C: { id: 'sub_C', status: 'active', cancel_at_period_end: true, customer: 'cus_C', metadata: { userId: 'userC' } },
+  sub_E: { id: 'sub_E', status: 'active', customer: 'cus_E', metadata: { userId: 'someoneElse' } }
+};
 const stripeCalls = [];
 globalThis.fetch = async function (url, opts) {
   url = String(url);
   if (url.endsWith('/.netlify/identity/user')) {
     const tok = String((opts && opts.headers && opts.headers.Authorization) || '').slice(7);
     return USERS[tok] ? new Response(JSON.stringify(USERS[tok]), { status: 200 }) : new Response('{}', { status: 401 });
+  }
+  if (url.startsWith('https://api.stripe.com/v1/subscriptions/')) {
+    const id = decodeURIComponent(url.split('/').pop());
+    const method = (opts && opts.method) || 'GET';
+    stripeCalls.push({ url, method });
+    if (!SUBS[id]) return new Response(JSON.stringify({ error: { message: 'No such subscription' } }), { status: 404 });
+    if (method === 'DELETE') {
+      if (globalThis.__cancelFail) return new Response(JSON.stringify({ error: { message: 'The provided key does not have the required permissions' } }), { status: 403 });
+      SUBS[id].status = 'canceled';
+    }
+    return new Response(JSON.stringify(SUBS[id]), { status: 200 });
   }
   if (url.startsWith('https://api.stripe.com/')) {
     stripeCalls.push({ url, body: String(opts.body) });
@@ -147,16 +168,52 @@ const end = Math.floor(Date.now() / 1000) + 86400 * 20;
 await signed({ type: 'customer.subscription.updated', data: { object: { id: 'sub_A', status: 'active', customer: 'cus_A', metadata: { userId: 'userA' }, items: { data: [{ current_period_end: end }] } } } });
 assert.strictEqual(lib.periodEnd({ items: { data: [{ current_period_end: end }] } }), end * 1000, 'period end read from the item on newer Stripe API versions');
 
-/* Delete is refused while Plus will renew; allowed after cancel */
+/* Deleting an account cancels Plus first. If the cancel fails, nothing is deleted. */
+const cancels = () => stripeCalls.filter((c) => c.method === 'DELETE').map((c) => c.url.split('/').pop());
+const gardensOf = (u) => [...globalThis.__stores['yardgrid-gardens'].keys()].filter((k) => k.startsWith(u + '/')).length;
+globalThis.__cancelFail = true;
 r = await j(await call('DELETE', '/api/account', { token: 'tokA' }));
-assert.strictEqual(r.status, 409, 'cancel Plus before deleting');
-await signed({ type: 'customer.subscription.updated', data: { object: { id: 'sub_A', status: 'active', cancel_at_period_end: true, customer: 'cus_A', metadata: { userId: 'userA' }, current_period_end: end } } });
-assert.strictEqual((await j(await call('GET', '/api/me', { token: 'tokA' }))).body.plus, true, 'still Plus until the period ends');
+globalThis.__cancelFail = false;
+assert.strictEqual(r.status, 502, 'cancel failure refuses deletion');
+assert.ok(/nothing was deleted/.test(r.body.error) && /hello@bloomandbedgarden\.com/.test(r.body.error), 'clear message with the contact email');
+assert.strictEqual(gardensOf('userA'), 6, 'gardens kept when the cancel fails');
+assert.strictEqual((await j(await call('GET', '/api/me', { token: 'tokA' }))).body.plus, true, 'account record kept');
+assert.ok(!globalThis.__deleted, 'sign-in kept');
+assert.strictEqual(SUBS.sub_A.status, 'active');
+
 r = await j(await call('DELETE', '/api/account', { token: 'tokA' }));
-assert.strictEqual(r.status, 200);
+assert.strictEqual(r.status, 200, 'active Plus is cancelled, then the account is deleted');
+assert.deepStrictEqual(cancels(), ['sub_A', 'sub_A'], 'DELETE /v1/subscriptions/sub_A');
+assert.strictEqual(SUBS.sub_A.status, 'canceled');
 assert.deepStrictEqual(globalThis.__deleted, ['userA'], 'the Identity user is removed with admin access');
-assert.strictEqual([...globalThis.__stores['yardgrid-gardens'].keys()].filter((k) => k.startsWith('userA/')).length, 0, 'gardens gone');
+assert.strictEqual(gardensOf('userA'), 0, 'gardens gone');
 assert.strictEqual([...globalThis.__stores['yardgrid-files'].keys()].filter((k) => k.startsWith('userA/')).length, 0, 'files gone');
+await signed({ type: 'customer.subscription.deleted', data: { object: SUBS.sub_A } });
+assert.strictEqual(globalThis.__stores['yardgrid-accounts'].has('userA'), false, 'the later cancel event does not recreate the account');
+
+/* Cancelled earlier (cancel_at_period_end): still cancelled now, then deleted. */
+await signed({ type: 'checkout.session.completed', data: { object: { mode: 'subscription', status: 'complete', metadata: { userId: 'userC' }, customer: 'cus_C', subscription: 'sub_C' } } });
+await signed({ type: 'customer.subscription.updated', data: { object: Object.assign({ current_period_end: end }, SUBS.sub_C) } });
+r = await j(await call('DELETE', '/api/account', { token: 'tokC' }));
+assert.strictEqual(r.status, 200);
+assert.strictEqual(cancels().pop(), 'sub_C', 'a subscription set to end later is cancelled now');
+assert.ok(globalThis.__deleted.includes('userC'));
+
+/* A subscription that is not this user's is never cancelled. */
+await globalThis.__stores['yardgrid-accounts'].set('userE', { data: JSON.stringify({ plus: true, status: 'active', subscriptionId: 'sub_E', stripeCustomerId: 'cus_E' }), metadata: {} });
+const before = cancels().length;
+r = await j(await call('DELETE', '/api/account', { token: 'tokE' }));
+assert.strictEqual(r.status, 502, 'mismatched subscription refuses deletion');
+assert.strictEqual(cancels().length, before, 'no cancel call for someone else\'s subscription');
+assert.strictEqual(SUBS.sub_E.status, 'active');
+
+/* No subscription: deletes normally, with no Stripe call. */
+const callsBefore = stripeCalls.length;
+r = await j(await call('DELETE', '/api/account', { token: 'tokD' }));
+assert.strictEqual(r.status, 200, 'no subscription deletes normally');
+assert.strictEqual(stripeCalls.length, callsBefore, 'no Stripe call without a subscription');
+assert.ok(globalThis.__deleted.includes('userD'));
+
 globalThis.__identityFail = true;
 r = await j(await call('DELETE', '/api/account', { token: 'tokB' }));
 assert.strictEqual(r.status, 502, 'a failed sign-in removal is reported, not hidden');
@@ -176,9 +233,11 @@ assert.strictEqual(lib.imageType(new Uint8Array([0xff, 0xd8, 0xff, 0xe0])), 'ima
 assert.strictEqual(lib.imageType(new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"></svg>')), '');
 assert.strictEqual(lib.validId('abc_123-X'), true);
 assert.strictEqual(lib.validId('a/b'), false);
-assert.strictEqual(lib.stillBilling({ subscriptionId: 's', status: 'active' }), true);
-assert.strictEqual(lib.stillBilling({ subscriptionId: 's', status: 'active', cancelAtPeriodEnd: true }), false);
-assert.strictEqual(lib.stillBilling({ subscriptionId: 's', status: 'canceled' }), false);
+assert.strictEqual(lib.hasOpenSubscription({ subscriptionId: 's', status: 'active' }), true);
+assert.strictEqual(lib.hasOpenSubscription({ subscriptionId: 's', status: 'active', cancelAtPeriodEnd: true }), true);
+assert.strictEqual(lib.hasOpenSubscription({ subscriptionId: 's', status: 'past_due' }), true);
+assert.strictEqual(lib.hasOpenSubscription({ subscriptionId: 's', status: 'canceled' }), false);
+assert.strictEqual(lib.ownsSubscription({ metadata: { userId: 'u' }, customer: 'cus_1' }, 'u', { stripeCustomerId: 'cus_2' }), false);
 
 console.error = origError;
 console.log('api tests passed');

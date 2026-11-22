@@ -1,7 +1,7 @@
 import { getStore } from "@netlify/blobs";
 import {
   FILE_CAP, GARDEN_CAP, STORAGE_CAP, checkoutUser, cleanSave, fileHeaders, gardenBytes, imageType, isPlus, json,
-  newId, readUser, stillBilling, subscriptionUpdate, validId, verifyStripe
+  hasOpenSubscription, newId, ownsSubscription, readUser, subscriptionUpdate, validId, verifyStripe
 } from "./lib.mjs";
 
 const accounts = () => getStore({ name: "yardgrid-accounts", consistency: "strong" });
@@ -315,14 +315,56 @@ async function applyCheckout(session) {
 async function applySubscription(sub) {
   const userId = sub.metadata && sub.metadata.userId;
   if (!userId) return;
-  const next = subscriptionUpdate(await accountOf(userId), sub);
+  const stored = await accounts().get(userId, { type: "json" });
+  /* A deleted account's cancellation event arrives after the record is gone. Do not recreate it. */
+  if (!stored && sub.status !== "active" && sub.status !== "trialing") return;
+  const next = subscriptionUpdate(stored || { plus: false }, sub);
   if (next) await accounts().setJSON(userId, next);
+}
+
+/* Cancels this user's Plus subscription now. Returns true when it is cancelled (or was already over). */
+async function cancelSubscription(user, account) {
+  const key = process.env.STRIPE_SECRET_KEY || "";
+  if (!key || !stripeKeyOk(key) || !validStripeId(account.subscriptionId)) return false;
+  const url = "https://api.stripe.com/v1/subscriptions/" + encodeURIComponent(account.subscriptionId);
+  const headers = { Authorization: "Bearer " + key };
+  try {
+    const got = await fetch(url, { headers: headers });
+    const sub = await got.json().catch(function () { return {}; });
+    if (!got.ok) {
+      console.error("stripe subscription read", got.status, sub.error && sub.error.message);
+      return false;
+    }
+    if (!ownsSubscription(sub, user.id, account)) {
+      console.error("stripe subscription is not this user's", account.subscriptionId);
+      return false;
+    }
+    if (sub.status === "canceled" || sub.status === "incomplete_expired") return true;
+    const res = await fetch(url, { method: "DELETE", headers: headers });
+    const data = await res.json().catch(function () { return {}; });
+    if (!res.ok || data.status !== "canceled") {
+      console.error("stripe subscription cancel", res.status, data.error && data.error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("stripe subscription cancel", err && err.message);
+    return false;
+  }
+}
+
+function validStripeId(id) {
+  return typeof id === "string" && /^sub_[A-Za-z0-9]{1,250}$/.test(id);
 }
 
 async function deleteAccount(user) {
   const account = await accountOf(user.id);
-  if (stillBilling(account)) {
-    return json({ error: "Plus is still set to renew. Cancel it under Manage subscription first, then delete the account." }, 409);
+  /* Plus is cancelled first. If that fails, nothing is deleted. */
+  if (hasOpenSubscription(account)) {
+    const cancelled = await cancelSubscription(user, account);
+    if (!cancelled) {
+      return json({ error: "Plus could not be cancelled, so nothing was deleted. Email hello@bloomandbedgarden.com and we will cancel Plus and delete the account." }, 502);
+    }
   }
   const gardenRows = await listPrefixed(gardens(), user.id + "/");
   for (let i = 0; i < gardenRows.length; i++) await gardens().delete(gardenRows[i].key);
