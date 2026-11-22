@@ -641,3 +641,32 @@ button.on { outline: 2px solid var(--green); outline-offset: -1px; background: v
   white-space: nowrap;
   border: 0;
 }
+
+/* ---------- soil calculator ---------- */
+.soil-beds { display: grid; gap: 12px; margin: 16px 0 0; }
+.soil-bed {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+}
+.soil-bed .row { background: none; border: 0; padding: 0; margin: 0; box-shadow: none; }
+.soil-field { display: flex; gap: 8px; align-items: center; }
+.soil-field input { min-width: 0; }
+.soil-field select { width: auto; flex: 0 0 auto; }
+.soil-bed-remove { margin: 10px 0 0; }
+.soil-bed-remove .btn { min-height: 36px; }
+.soil-actions { margin: 12px 0 0; }
+.soil-results { margin: 20px 0 28px; }
+.soil-results h2 { margin-top: 0; }
+.soil-results h3 { margin: 18px 0 8px; }
+.soil-total {
+  font-family: var(--font-serif);
+  font-size: clamp(1.8rem, 1.4rem + 1.2vw, 2.4rem);
+  font-weight: 600;
+  color: var(--green-dark);
+  margin: 0 0 4px;
+  line-height: 1.15;
+}
+.soil-yards { font-size: 1.15rem; margin: 0 0 8px; }
