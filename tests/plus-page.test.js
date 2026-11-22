@@ -16,6 +16,7 @@ assert.ok(html.includes('id="accountForm"') && html.includes('id="accountStatus"
 assert.ok(html.includes('src="js/account.js"') && index.includes('src="js/account.js"'), 'plus and home load account.js');
 assert.ok(index.includes('src="js/config.js"'), 'home loads config.js in time to keep the hash');
 assert.ok(index.includes('<meta name="google-site-verification" content="5aUDvTAJZvLllM0J9P71zy-qEro_l_k9VWzHumEw2vs" />'), 'Search Console verification meta is on the homepage');
+assert.ok(index.includes('<meta name="p:domain_verify" content="b32495e6d0bf46fd29c6dfb4636d9318"/>'), 'Pinterest domain verification meta is on the homepage');
 assert.ok(!html.includes('Save to your account'), 'old planner link is gone');
 assert.ok(plan.includes('id="plusMonthly"') && plan.includes('src="js/account.js"'), 'planner checkout remains');
 
