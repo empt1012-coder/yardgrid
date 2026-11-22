@@ -377,9 +377,9 @@
     on('plusYearly', 'click', function () { startCheckout('year'); });
     on('plusPortal', 'click', startPortal);
     on('accountDelete', 'click', function () {
-      if (!confirm('Delete the account and the gardens stored in it? This cannot be undone. A file you already exported stays on your device.')) return;
+      if (!confirm('Delete the account and the gardens stored in it? If Plus is on, deleting cancels it now and it stops billing. This cannot be undone. A file you already exported stays on your device.')) return;
       api('/api/account', { method: 'DELETE', headers: authHeaders(false) })
-        .then(function () { clearAuth(); clearPendingPlan(); refreshStatus(); status('The account and its cloud saves were deleted.'); })
+        .then(function () { clearAuth(); clearPendingPlan(); refreshStatus(); status('The account and its cloud saves were deleted. Any Plus subscription was cancelled.'); })
         .catch(function (err) { status(err.message); });
     });
     consumeIdentityHash()
