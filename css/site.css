@@ -140,6 +140,7 @@ main > h2:first-child, .card h2 { margin-top: 0; }
 .btn-lg { padding: 14px 24px; font-size: 1.02rem; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 0; }
 p > .btn + .btn { margin-left: 6px; }
+.actions > .btn + .btn { margin-left: 0; }
 
 /* ---------- cards ---------- */
 .hero { background: var(--card); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--shadow); border: 1px solid var(--line); }
