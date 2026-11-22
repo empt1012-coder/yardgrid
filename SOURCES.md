@@ -48,6 +48,10 @@ Checked 18 November 2026. Plant numbers in the planner come from these pages. If
   https://extension.umn.edu/vegetables/growing-herbs
   Most herbs need at least six hours of direct sun. Transplant herbs after frost danger has passed.
 
+- University of Minnesota Extension. “Growing garlic in home gardens.”
+  https://extension.umn.edu/vegetables/growing-garlic
+  Plant cloves in the fall, usually one or two weeks after the first killing frost. Counted from the average first 32°F date. UF/IFAS October–November dates for Northwest Florida are still not used as a frost offset.
+
 ## Neighbor notes
 
 - SDSU P-00379, above. Anecdotal marigold and basil notes. Bean and pea nitrogen timing.

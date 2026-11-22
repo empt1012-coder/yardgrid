@@ -670,3 +670,7 @@ button.on { outline: 2px solid var(--green); outline-offset: -1px; background: v
   line-height: 1.15;
 }
 .soil-yards { font-size: 1.15rem; margin: 0 0 8px; }
+
+.week-block { margin: 28px 0; }
+.week-block h2 { margin: 0 0 12px; }
+.week-block table { margin: 0; }
