@@ -3,3 +3,16 @@
 
 [functions]
   node_bundler = "esbuild"
+
+# Security headers for every page. The pages use inline scripts and inline styles, so those stay
+# allowed. Everything else loads from this site: Identity is /.netlify/identity, the API is /api,
+# and Stripe Checkout and the billing portal are full-page redirects, which these rules do not limit.
+# The planner reads pictures and imported files through blob: and data: URLs, and can use the camera.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' data: blob:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(self), microphone=(), geolocation=(), payment=()"

@@ -1,7 +1,6 @@
-/* Yardgrid planner.
-   Scene Board idea, rewritten for a static page: stage.js draws a photo under the pieces,
-   and upload.js shrinks images on a canvas in the browser. Nothing is sent to a server.
-   The original Scene Board folder is not modified. */
+/* Bloom & Bed Garden planner (the repo is still named yardgrid).
+   Pictures are shrunk on a canvas in the browser. Nothing leaves the browser unless the
+   person saves to a Plus account (js/account.js). */
 (function () {
   const Plants = window.YardPlants;
   const Logic = window.YardLogic;
@@ -40,6 +39,16 @@
   const pointers = new Map();
 
   function uid() { return Math.random().toString(36).slice(2, 10); }
+
+  /* Shared links, imported files, and saved copies all pass through Logic.cleanGarden
+     before they reach the board, because the board writes these fields into HTML. */
+  function cleanGarden(g) {
+    const libraryIds = {};
+    ((window.YardPhotos && YardPhotos.items) || []).forEach(function (item) { libraryIds[item.id] = true; });
+    const plantIds = {};
+    Object.keys(byId).forEach(function (id) { plantIds[id] = true; });
+    return Logic.cleanGarden(g, plantIds, libraryIds);
+  }
 
   function blank() {
     return {
@@ -169,7 +178,8 @@
       const raw = localStorage.getItem('yardgrid-current');
       if (!raw) return false;
       const data = JSON.parse(raw);
-      Object.assign(state, blank(), data, { tool: 'pan', armed: null, selectedBed: null, selectedPlant: null, demo: false });
+      const cloudId = data && typeof data.cloudId === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(data.cloudId) ? data.cloudId : '';
+      Object.assign(state, blank(), cleanGarden(data), { cloudId: cloudId, viewOnly: !!(data && data.viewOnly), tool: 'pan', armed: null, selectedBed: null, selectedPlant: null, demo: false });
       return true;
     } catch (e) { return false; }
   }
@@ -520,8 +530,9 @@
     const shop = Logic.shopping(state.plants, byId);
     if (!shop.length) $('shop').innerHTML = '<p class="muted">The list fills in as you place plants.</p>';
     else {
-      $('shop').innerHTML = '<table><thead><tr><th>Plant</th><th>Plants</th><th></th></tr></thead><tbody>' + shop.map(function (item) {
-        return '<tr><td>' + esc(item.name) + '<br><span class="muted">' + item.squares + ' sq</span></td><td>' + item.plants + '</td><td><a href="#affiliate-placeholder">Buy seeds</a><!-- A real affiliate link goes here later. --></td></tr>';
+      /* No seed links yet. A "Buy seeds" column waits until Emilio approves an affiliate program. */
+      $('shop').innerHTML = '<table><thead><tr><th>Plant</th><th>Plants</th></tr></thead><tbody>' + shop.map(function (item) {
+        return '<tr><td>' + esc(item.name) + '<br><span class="muted">' + esc(item.squares) + ' sq</span></td><td>' + esc(item.plants) + '</td></tr>';
       }).join('') + '</tbody></table><p class="muted">Packet seed counts are not in the extension charts used here, so this list counts plants, not packets.</p>';
     }
 
@@ -1161,24 +1172,20 @@
       try { data = JSON.parse(reader.result); }
       catch (e) { setHint('That file is not a Bloom & Bed Garden plan.'); return; }
       if (!data || data.format !== 'yardgrid-garden' || !data.garden) { setHint('That file is not a Bloom & Bed Garden plan.'); return; }
-      const g = data.garden;
-      Object.assign(state, blank(), {
-        id: uid(), name: g.name || 'Imported garden', frost: g.frost || '', grid: g.grid !== false,
-        opacity: typeof g.opacity === 'number' ? g.opacity : 0.62,
-        photo: g.photo || null, beds: g.beds || [], plants: g.plants || [],
-        ppm: g.ppm || 42, panX: g.panX || 24, panY: g.panY || 24,
-        mode: g.mode === 'place' ? 'place' : 'grid',
-        pieces: g.pieces || [], stamps: g.stamps || [], selectedPiece: null, demo: false
+      const g = cleanGarden(data.garden);
+      Object.assign(state, blank(), g, {
+        id: uid(), name: typeof data.garden.name === 'string' && data.garden.name ? g.name : 'Imported garden',
+        selectedPiece: null, demo: false
       });
       const after = function () { persist(); render(); setHint('Garden imported. It stays in this browser.'); };
       const stampLoads = (data.stamps || []).map(function (row) {
-        if (!row || !row.id || typeof row.data !== 'string') return Promise.resolve();
+        if (!row || !row.id || typeof row.data !== 'string' || row.data.indexOf('data:image/') !== 0) return Promise.resolve();
         return fetch(row.data).then(function (r) { return r.blob(); }).then(function (blob) {
           rememberStamp(row.id, blob);
         }).catch(function () {});
       });
       Promise.all(stampLoads).then(function () {
-      if (data.photo && typeof data.photo === 'string') {
+      if (data.photo && typeof data.photo === 'string' && data.photo.indexOf('data:image/') === 0 && state.photo) {
         fetch(data.photo).then(function (r) { return r.blob(); }).then(function (blob) {
           return setPhotoFromBlob(blob, state.photo.natW || 1, state.photo.natH || 1, state.photo);
         }).then(after).catch(function () { state.photo = null; after(); });
@@ -1242,12 +1249,13 @@
       persist();
     },
     applyCloud: function (record, viewOnly) {
-      const g = (record && record.garden) || {};
+      const g = cleanGarden((record && record.garden) || {});
       const kind = record && record.kind === 'arrangement' ? 'place' : (g.mode === 'place' ? 'place' : 'grid');
+      const recordId = record && typeof record.id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(record.id) ? record.id : '';
       Object.assign(state, blank(), g, {
         id: uid(),
-        cloudId: viewOnly ? '' : ((record && record.id) || ''),
-        name: (record && record.name) || g.name || 'Garden',
+        cloudId: viewOnly ? '' : recordId,
+        name: (record && typeof record.name === 'string' && record.name) ? record.name.slice(0, 80) : g.name || 'Garden',
         mode: kind,
         tool: 'pan', armed: null, demo: false, viewOnly: !!viewOnly
       });
@@ -1263,8 +1271,8 @@
           return setPhotoFromBlob(blob, state.photo && state.photo.natW || 1, state.photo && state.photo.natH || 1, state.photo);
         }).catch(function () { state.photo = null; }));
       }
-      (record && record.stamps || []).forEach(function (stamp) {
-        if (!stamp || !stamp.fileId) return;
+      (record && Array.isArray(record.stamps) ? record.stamps : []).forEach(function (stamp) {
+        if (!stamp || !stamp.fileId || !/^[A-Za-z0-9_-]{1,64}$/.test(String(stamp.id))) return;
         jobs.push(fetch(cloudFileUrl(stamp.fileId, viewOnly), { headers: headers }).then(function (res) {
           if (!res.ok) throw new Error('stamp');
           return res.blob();
@@ -1294,7 +1302,8 @@
     const list = namedSaves();
     const item = list[Number($('saveList').value)];
     if (!item) return;
-    Object.assign(state, blank(), item.data, { tool: 'pan', armed: null, demo: false });
+    const cloudId = item.data && typeof item.data.cloudId === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(item.data.cloudId) ? item.data.cloudId : '';
+    Object.assign(state, blank(), cleanGarden(item.data), { cloudId: cloudId, tool: 'pan', armed: null, demo: false });
     if (!state.pieces) state.pieces = [];
     if (!state.stamps) state.stamps = [];
     Promise.all([idbGet(state.id), loadStampBlobs()]).then(function (rows) {

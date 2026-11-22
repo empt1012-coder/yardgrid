@@ -20,15 +20,19 @@ Then open http://127.0.0.1:8787/
 
 ## What is placeholder
 
-- “Buy seeds” goes to `#affiliate-placeholder`. A code comment in the planner marks where a real affiliate link would go. Nothing is joined yet.
-- Contact is `hello@example.com`.
-- Footer social links are `#`.
+- There is no “Buy seeds” link. The planner's shopping list has a code comment where one could go once an affiliate program is approved. Nothing is joined yet.
+- Contact is hello@bloomandbedgarden.com (forwarded mail).
+- There are no social accounts yet, so the footer has no social links.
 - Ad spots are HTML comments only. There is no ad code.
 - The visitor-facing name is Bloom & Bed Garden. The live address is https://bloomandbedgarden.com.
 
 ## Plus
 
 Cloud save is optional. The tools stay free. Sign-in is Netlify Identity. Gardens and pictures are stored with Netlify Blobs through a function. Stripe Checkout and the customer portal use keys in the Netlify environment (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY`, `STRIPE_PORTAL_CONFIGURATION`). Those keys are not in this repo. The function accepts test or live secret and restricted keys (`sk_test_`, `rk_test_`, `sk_live_`, `rk_live_`).
+
+## Tests
+
+`npm test` runs every file in `tests/`. The API test (`tests/api.test.mjs`) uses in-memory stand-ins for Blobs, Identity, and Stripe, so it needs no installs and touches nothing live.
 
 ## What is next
 

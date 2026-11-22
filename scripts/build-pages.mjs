@@ -194,6 +194,7 @@ function shell({ urlPath, title, description, body, jsonld, nav }) {
   <meta name="description" content="${esc(description)}">
   <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/css/site.css">
+  <link rel="canonical" href="${SITE}${urlPath}">
   <script src="/js/config.js"></script>
   <script>yardMeta(${JSON.stringify(urlPath)});</script>
 ${jsonld ? '  <script type="application/ld+json">' + JSON.stringify(jsonld).replace(/</g, '\\u003c') + '</script>\n' : ''}</head>
@@ -217,9 +218,10 @@ ${body}
     <nav class="nav">
       <a href="/zones/">Zones</a>
       <a href="/plants/">Plants</a>
+      <a href="/about.html">About</a>
       <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
       <a href="/contact.html">Contact</a>
-      <a href="#">Social</a>
     </nav>
   </footer>
   <script src="/js/account.js"></script>

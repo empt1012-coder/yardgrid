@@ -68,17 +68,50 @@
     return fromDoy(n);
   }
 
+  /* Zone medians use stations in the 48 contiguous states and DC, the same set the
+     zone pages use (scripts/build-pages.mjs). Alaska, Hawaii, and territory stations are left
+     out because they sit in very different climates from the rest of their zone. */
+  var OUTSIDE = { AK: 1, HI: 1, PR: 1, VI: 1, GU: 1, AS: 1, MP: 1 };
+  function contiguousStation(name) {
+    var m = /, ([A-Z]{2}) US$/.exec(String(name || ''));
+    return !!m && !OUTSIDE[m[1]];
+  }
+
+  /* Last-frost dates in Aug–Dec belong to the winter before; first-frost dates in Jan–Jun
+     belong to the winter after. Shifting them keeps a zone 9b–10b median from breaking at New Year. */
+  function lastDay(mmdd) { var n = doy(mmdd); return n == null ? null : (n > 212 ? n - 365 : n); }
+  function firstDay(mmdd) { var n = doy(mmdd); return n == null ? null : (n < 182 ? n + 365 : n); }
+  function middle(sorted) {
+    var mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+  }
+  function wrapDay(n) {
+    if (n < 1) return { mmdd: fromDoy(n + 365), tag: 'the winter before' };
+    if (n > 365) return { mmdd: fromDoy(n - 365), tag: 'the next winter' };
+    return { mmdd: fromDoy(n), tag: '' };
+  }
+
   function zoneMedian(lookup, zone) {
     var lasts = [];
     var firsts = [];
     Object.keys(lookup.stations || {}).forEach(function (id) {
       var row = lookup.stations[id];
-      if (row[3] !== zone) return;
-      lasts.push(row[1]);
-      firsts.push(row[2]);
+      if (row[3] !== zone || !contiguousStation(row[0])) return;
+      var a = lastDay(row[1]);
+      var b = firstDay(row[2]);
+      if (a == null || b == null) return;
+      lasts.push(a);
+      firsts.push(b);
     });
     if (!lasts.length) return null;
-    return { zone: zone, last: medianMmdd(lasts), first: medianMmdd(firsts), n: lasts.length, basis: 'zone-median' };
+    lasts.sort(function (x, y) { return x - y; });
+    firsts.sort(function (x, y) { return x - y; });
+    var last = wrapDay(middle(lasts));
+    var first = wrapDay(middle(firsts));
+    return {
+      zone: zone, last: last.mmdd, first: first.mmdd, lastTag: last.tag, firstTag: first.tag,
+      n: lasts.length, basis: 'zone-median'
+    };
   }
 
   function zipPlace(lookup, zip) {
@@ -100,6 +133,12 @@
     return year + '-' + mmdd.slice(0, 2) + '-' + mmdd.slice(2, 4);
   }
 
+  /* The spring the dates are for. From August on, the next spring is the one to plan. */
+  function planYear(now) {
+    var d = now || new Date();
+    return d.getMonth() >= 7 ? d.getFullYear() + 1 : d.getFullYear();
+  }
+
   function pretty(mmdd) {
     var n = doy(mmdd);
     if (!n) return '';
@@ -117,9 +156,9 @@
       return zone + ' No NOAA station with both 32°F dates was within 80 km of this ZIP’s Census point, so no frost date is shown.';
     }
     if (place.last) {
-      return zone + ' The frost dates are the median of the 50% NOAA dates at ' + place.n + ' stations matched to this zone. A zone is not one climate. A ZIP uses one nearby station instead. Last 32°F ' + pretty(place.last) + '. First 32°F ' + pretty(place.first) + '.';
+      return zone + ' The frost dates are the median of the 50% NOAA dates at ' + place.n + ' contiguous-US ' + (place.n === 1 ? 'station' : 'stations') + ' matched to this zone. A zone is not one climate. A ZIP uses one nearby station instead. Last 32°F ' + pretty(place.last) + (place.lastTag ? ' (' + place.lastTag + ')' : '') + '. First 32°F ' + pretty(place.first) + (place.firstTag ? ' (' + place.firstTag + ')' : '') + '.';
     }
-    return zone + ' No NOAA stations were matched to this zone, so no frost date is shown.';
+    return zone + ' No contiguous-US NOAA stations were matched to this zone, so no zone-wide frost date is shown. A ZIP code in this zone may still have a nearby station.';
   }
 
   function pct(day) { return ((day - 1) / 365) * 100; }
@@ -175,9 +214,11 @@
     zones: zones,
     doy: doy,
     medianMmdd: medianMmdd,
+    contiguousStation: contiguousStation,
     zoneMedian: zoneMedian,
     zipPlace: zipPlace,
     iso: iso,
+    planYear: planYear,
     pretty: pretty,
     placeText: placeText,
     plantingHtml: plantingHtml
