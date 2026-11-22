@@ -50,3 +50,38 @@ assert.ok(html.indexOf('Direct sow') >= 0);
 assert.ok(html.indexOf('plan.html?plant=bean&amp;frost=2026-03-30') >= 0);
 
 console.log('charts tests passed', med.n, 'stations in 7b');
+
+/* Zone medians: contiguous US only, and no break at New Year (same as the zone pages). */
+assert.strictEqual(charts.contiguousStation('ANCHORAGE INTL AP, AK US'), false);
+assert.strictEqual(charts.contiguousStation('HILO INTL AP, HI US'), false);
+assert.strictEqual(charts.contiguousStation('ADDISON, AL US'), true);
+['3a', '4a', '5a', '6a', '7a'].forEach(function (z) {
+  const ak = Object.keys(lookup.stations).filter(function (id) { const r = lookup.stations[id]; return r[3] === z && / AK US$/.test(r[0]); }).length;
+  const m = charts.zoneMedian(lookup, z);
+  const all = Object.keys(lookup.stations).filter(function (id) { return lookup.stations[id][3] === z; }).length;
+  if (ak) assert.ok(m.n <= all - ak, z + ' leaves out ' + ak + ' Alaska stations');
+});
+assert.strictEqual(charts.zoneMedian(lookup, '1a'), null, 'Alaska-only zone has no contiguous median');
+assert.ok(/No contiguous-US NOAA stations/.test(charts.placeText({ zone: '1a', basis: 'zone-median' })));
+const z7a = charts.zoneMedian(lookup, '7a');
+assert.strictEqual(z7a.last, '0418', '7a matches the zone page');
+const z10a = charts.zoneMedian(lookup, '10a');
+assert.strictEqual(z10a.last, '0116');
+assert.strictEqual(z10a.first, '0101');
+assert.strictEqual(z10a.firstTag, 'the next winter');
+assert.ok(/First 32°F Jan 1 \(the next winter\)/.test(charts.placeText(z10a)));
+
+/* The chart and the zone pages agree for every zone. */
+import(path.join(root, 'scripts/build-pages.mjs')).then(function (gen) {
+  const data = gen.loadData();
+  gen.ZONES.forEach(function (z) {
+    const s = gen.zoneStats(data, z);
+    const m = charts.zoneMedian(lookup, z);
+    assert.strictEqual(m.n, s.n, z + ' station count');
+    assert.strictEqual(m.last, s.last.mmdd, z + ' last frost');
+    assert.strictEqual(m.first, s.first.mmdd, z + ' first frost');
+  });
+  assert.strictEqual(charts.planYear(new Date(2026, 10, 21)), 2027, 'in November, plan next spring');
+  assert.strictEqual(charts.planYear(new Date(2027, 2, 1)), 2027, 'in March, plan this spring');
+  console.log('chart zone medians match the zone pages');
+}).catch(function (e) { console.error(e); process.exit(1); });

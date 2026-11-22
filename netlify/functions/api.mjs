@@ -1,14 +1,14 @@
 import { getStore } from "@netlify/blobs";
-import { FILE_CAP, STORAGE_CAP, gardenBytes, isPlus, json, newId, readUser, verifyStripe } from "./lib.mjs";
+import {
+  FILE_CAP, GARDEN_CAP, STORAGE_CAP, checkoutUser, cleanSave, fileHeaders, gardenBytes, imageType, isPlus, json,
+  newId, readUser, stillBilling, subscriptionUpdate, validId, verifyStripe
+} from "./lib.mjs";
 
 const accounts = () => getStore({ name: "yardgrid-accounts", consistency: "strong" });
 const gardens = () => getStore({ name: "yardgrid-gardens", consistency: "strong" });
 const files = () => getStore({ name: "yardgrid-files", consistency: "strong" });
 
 const PUBLIC_SITE = "https://bloomandbedgarden.com";
-function siteOrigin(req) {
-  return new URL(req.url).origin;
-}
 
 async function accountOf(userId) {
   return (await accounts().get(userId, { type: "json" })) || { plus: false };
@@ -36,27 +36,34 @@ export default async function handler(req) {
   const url = new URL(req.url);
   const parts = url.pathname.split("/").filter(Boolean);
   if (parts[0] !== "api") return json({ error: "Not found." }, 404);
+  /* Every route is awaited here so a failure inside one is caught below, not left unhandled. */
   try {
-    if (parts[1] === "stripe-webhook" && req.method === "POST") return stripeWebhook(req);
-    if (parts[1] === "share" && parts[2] && req.method === "GET") {
-      if (parts[3] === "file" && parts[4]) return shareFile(parts[2], parts[4]);
-      return shareGarden(parts[2]);
-    }
-    const user = await readUser(req);
-    if (!user) return json({ error: "Sign in first." }, 401);
-    if (parts[1] === "me" && req.method === "GET") return me(user);
-    if (parts[1] === "account" && req.method === "DELETE") return deleteAccount(req, user);
-    if (parts[1] === "checkout" && req.method === "POST") return checkout(req, user);
-    if (parts[1] === "portal" && req.method === "POST") return portal(req, user);
-    if (parts[1] === "files" && req.method === "POST") return saveFile(req, user);
-    if (parts[1] === "files" && parts[2] && req.method === "GET") return readFile(user, parts[2]);
-    if (parts[1] === "gardens" && req.method === "GET" && !parts[2]) return listGardens(user);
-    if (parts[1] === "gardens" && req.method === "POST" && !parts[2]) return saveGarden(req, user);
-    if (parts[1] === "gardens" && parts[2] && req.method === "GET") return readGarden(user, parts[2]);
-    return json({ error: "Not found." }, 404);
+    return await route(req, parts);
   } catch (err) {
-    return json({ error: err.message || "Something went wrong." }, 500);
+    console.error("api error", parts[1] || "", err && err.stack ? err.stack : err);
+    return json({ error: "Something went wrong. Try again in a minute." }, 500);
   }
+}
+
+async function route(req, parts) {
+  if (parts[1] === "stripe-webhook" && req.method === "POST") return await stripeWebhook(req);
+  if (parts[1] === "share" && parts[2] && req.method === "GET") {
+    if (!validId(parts[2])) return json({ error: "That link does not open a garden." }, 404);
+    if (parts[3] === "file" && parts[4]) return await shareFile(parts[2], parts[4]);
+    return await shareGarden(parts[2]);
+  }
+  const user = await readUser(req);
+  if (!user) return json({ error: "Sign in first." }, 401);
+  if (parts[1] === "me" && req.method === "GET") return await me(user);
+  if (parts[1] === "account" && req.method === "DELETE") return await deleteAccount(user);
+  if (parts[1] === "checkout" && req.method === "POST") return await checkout(req, user);
+  if (parts[1] === "portal" && req.method === "POST") return await portal(user);
+  if (parts[1] === "files" && req.method === "POST") return await saveFile(req, user);
+  if (parts[1] === "files" && parts[2] && req.method === "GET") return await readFile(user, parts[2]);
+  if (parts[1] === "gardens" && req.method === "GET" && !parts[2]) return await listGardens(user);
+  if (parts[1] === "gardens" && req.method === "POST" && !parts[2]) return await saveGarden(req, user);
+  if (parts[1] === "gardens" && parts[2] && req.method === "GET") return await readGarden(user, parts[2]);
+  return json({ error: "Not found." }, 404);
 }
 
 export const config = { path: "/api/*" };
@@ -86,6 +93,7 @@ async function listGardens(user) {
 }
 
 async function readGarden(user, id) {
+  if (!validId(id)) return json({ error: "That save was not found." }, 404);
   const record = await gardens().get(user.id + "/" + id, { type: "json" });
   if (!record) return json({ error: "That save was not found." }, 404);
   return json({ garden: publicRecord(record), plus: isPlus(await accountOf(user.id)) });
@@ -102,42 +110,52 @@ function publicRecord(record) {
 async function saveFile(req, user) {
   const account = await accountOf(user.id);
   if (!isPlus(account)) return json({ error: "Cloud save is part of Bloom & Bed Plus." }, 403);
+  const declared = Number(req.headers.get("content-length") || 0);
+  if (declared > FILE_CAP) return json({ error: "That picture is too large to store." }, 413);
   const bytes = await req.arrayBuffer();
-  if (!bytes.byteLength || bytes.byteLength > FILE_CAP) return json({ error: "That picture is too large to store." }, 413);
+  if (!bytes.byteLength) return json({ error: "That picture was empty." }, 400);
+  if (bytes.byteLength > FILE_CAP) return json({ error: "That picture is too large to store." }, 413);
+  const type = imageType(bytes);
+  if (!type) return json({ error: "Only JPG, PNG, WebP, or GIF pictures can be stored." }, 415);
   const used = await usedBytes(user.id, bytes.byteLength);
   if (used > STORAGE_CAP) return json({ error: "This account is at the 200 MB storage cap." }, 413);
   const fileId = newId();
-  const type = req.headers.get("content-type") || "application/octet-stream";
   await files().set(user.id + "/" + fileId, bytes, { metadata: { bytes: String(bytes.byteLength), type: type } });
   return json({ fileId: fileId, bytes: bytes.byteLength });
 }
 
 async function readFile(user, fileId) {
+  if (!validId(fileId)) return json({ error: "That picture was not found." }, 404);
   const key = user.id + "/" + fileId;
   const got = await files().getWithMetadata(key, { type: "arrayBuffer" });
   if (!got || !got.data) return json({ error: "That picture was not found." }, 404);
-  const type = (got.metadata && got.metadata.type) || "application/octet-stream";
-  return new Response(got.data, { headers: { "content-type": type, "cache-control": "private, max-age=3600" } });
+  return new Response(got.data, { headers: fileHeaders(imageType(got.data)) });
 }
 
 async function saveGarden(req, user) {
   const account = await accountOf(user.id);
   if (!isPlus(account)) return json({ error: "Cloud save is part of Bloom & Bed Plus. Your browser copy is still here." }, 403);
-  const body = await req.json();
-  const kind = body.kind === "arrangement" ? "arrangement" : "plan";
-  const id = body.id || newId();
+  const declared = Number(req.headers.get("content-length") || 0);
+  if (declared > GARDEN_CAP) return json({ error: "That garden is too large to save. Try removing some pieces." }, 413);
+  const raw = await req.text();
+  if (Buffer.byteLength(raw, "utf8") > GARDEN_CAP) return json({ error: "That garden is too large to save. Try removing some pieces." }, 413);
+  let body;
+  try { body = JSON.parse(raw); } catch (err) { return json({ error: "That save could not be read." }, 400); }
+  const clean = cleanSave(body);
+  if (clean.error) return json({ error: clean.error }, 400);
+  const id = clean.id || newId();
   const existing = await gardens().get(user.id + "/" + id, { type: "json" });
   if (existing && existing.userId !== user.id) return json({ error: "That save was not found." }, 404);
   const record = {
     id: id,
     userId: user.id,
-    name: String(body.name || "Garden").slice(0, 80),
-    kind: kind,
+    name: clean.name,
+    kind: clean.kind,
     updated: new Date().toISOString(),
     shareToken: (existing && existing.shareToken) || newId(),
-    garden: body.garden || {},
-    photoId: body.photoId || "",
-    stamps: Array.isArray(body.stamps) ? body.stamps : []
+    garden: clean.garden,
+    photoId: clean.photoId,
+    stamps: clean.stamps
   };
   const fileIds = referencedFiles(record);
   const owned = await listPrefixed(files(), user.id + "/");
@@ -188,15 +206,15 @@ async function shareGarden(token) {
 
 async function shareFile(token, fileId) {
   const found = await findByShare(token);
-  if (!found || referencedFiles(found).indexOf(fileId) === -1) return json({ error: "That picture was not found." }, 404);
+  if (!validId(fileId) || !found || referencedFiles(found).indexOf(fileId) === -1) return json({ error: "That picture was not found." }, 404);
   const got = await files().getWithMetadata(found.userId + "/" + fileId, { type: "arrayBuffer" });
   if (!got || !got.data) return json({ error: "That picture was not found." }, 404);
-  const type = (got.metadata && got.metadata.type) || "application/octet-stream";
-  return new Response(got.data, { headers: { "content-type": type, "cache-control": "private, max-age=3600" } });
+  return new Response(got.data, { headers: fileHeaders(imageType(got.data)) });
 }
 
 async function findByShare(token) {
-  const { blobs } = await gardens().list();
+  /* Every page of saves, not only the first one the list call returns. */
+  const blobs = await listPrefixed(gardens(), "");
   for (let i = 0; i < blobs.length; i++) {
     const record = await gardens().get(blobs[i].key, { type: "json" });
     if (record && record.shareToken === token) return record;
@@ -217,6 +235,9 @@ async function checkout(req, user) {
     return json({ error: "Plus checkout is not turned on yet." }, 503);
   }
   const account = await accountOf(user.id);
+  if (isPlus(account)) {
+    return json({ error: "Bloom & Bed Plus is already on for this account. Use Manage subscription to change it." }, 409);
+  }
   const params = new URLSearchParams();
   params.set("mode", "subscription");
   params.set("line_items[0][price]", price);
@@ -234,12 +255,15 @@ async function checkout(req, user) {
     headers: { Authorization: "Bearer " + key, "Content-Type": "application/x-www-form-urlencoded" },
     body: params
   });
-  const data = await res.json();
-  if (!res.ok) return json({ error: data.error && data.error.message ? data.error.message : "Checkout could not start." }, 502);
+  const data = await res.json().catch(function () { return {}; });
+  if (!res.ok || !data.url) {
+    console.error("stripe checkout", res.status, data.error && data.error.message);
+    return json({ error: "Checkout could not start. Try again in a minute." }, 502);
+  }
   return json({ url: data.url });
 }
 
-async function portal(req, user) {
+async function portal(user) {
   const key = process.env.STRIPE_SECRET_KEY || "";
   const account = await accountOf(user.id);
   if (!key || !stripeKeyOk(key) || !account.stripeCustomerId) {
@@ -254,8 +278,11 @@ async function portal(req, user) {
     headers: { Authorization: "Bearer " + key, "Content-Type": "application/x-www-form-urlencoded" },
     body: params
   });
-  const data = await res.json();
-  if (!res.ok) return json({ error: data.error && data.error.message ? data.error.message : "The billing portal could not open." }, 502);
+  const data = await res.json().catch(function () { return {}; });
+  if (!res.ok || !data.url) {
+    console.error("stripe portal", res.status, data.error && data.error.message);
+    return json({ error: "The billing page could not open. Try again in a minute." }, 502);
+  }
   return json({ url: data.url });
 }
 
@@ -265,8 +292,9 @@ async function stripeWebhook(req) {
   if (!verifyStripe(payload, req.headers.get("stripe-signature") || "", secret)) {
     return json({ error: "The Stripe signature did not match." }, 400);
   }
-  const event = JSON.parse(payload);
-  const obj = event.data && event.data.object;
+  let event;
+  try { event = JSON.parse(payload); } catch (err) { return json({ error: "The event could not be read." }, 400); }
+  const obj = event && event.data && event.data.object;
   if (!obj) return json({ ok: true });
   if (event.type === "checkout.session.completed") await applyCheckout(obj);
   if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") await applySubscription(obj);
@@ -274,7 +302,7 @@ async function stripeWebhook(req) {
 }
 
 async function applyCheckout(session) {
-  const userId = (session.metadata && session.metadata.userId) || session.client_reference_id;
+  const userId = checkoutUser(session);
   if (!userId) return;
   const account = await accountOf(userId);
   account.stripeCustomerId = session.customer || account.stripeCustomerId;
@@ -287,25 +315,27 @@ async function applyCheckout(session) {
 async function applySubscription(sub) {
   const userId = sub.metadata && sub.metadata.userId;
   if (!userId) return;
-  const account = await accountOf(userId);
-  account.stripeCustomerId = sub.customer || account.stripeCustomerId;
-  account.subscriptionId = sub.id;
-  account.status = sub.status || "";
-  account.plusUntil = sub.current_period_end ? sub.current_period_end * 1000 : 0;
-  const open = sub.status === "active" || sub.status === "trialing";
-  account.plus = open;
-  await accounts().setJSON(userId, account);
+  const next = subscriptionUpdate(await accountOf(userId), sub);
+  if (next) await accounts().setJSON(userId, next);
 }
 
-async function deleteAccount(req, user) {
+async function deleteAccount(user) {
+  const account = await accountOf(user.id);
+  if (stillBilling(account)) {
+    return json({ error: "Plus is still set to renew. Cancel it under Manage subscription first, then delete the account." }, 409);
+  }
   const gardenRows = await listPrefixed(gardens(), user.id + "/");
   for (let i = 0; i < gardenRows.length; i++) await gardens().delete(gardenRows[i].key);
   const fileRows = await listPrefixed(files(), user.id + "/");
   for (let i = 0; i < fileRows.length; i++) await files().delete(fileRows[i].key);
   await accounts().delete(user.id);
-  await fetch(siteOrigin(req) + "/.netlify/identity/user", {
-    method: "DELETE",
-    headers: { Authorization: "Bearer " + user._token }
-  });
+  /* Identity has no self-delete endpoint, so the sign-in is removed with the function's admin access. */
+  try {
+    const { admin } = await import("@netlify/identity");
+    await admin.deleteUser(user.id);
+  } catch (err) {
+    console.error("identity delete", err && err.message);
+    return json({ error: "Your saved gardens were deleted, but the sign-in could not be removed. Email hello@bloomandbedgarden.com and we will remove it." }, 502);
+  }
   return json({ ok: true });
 }

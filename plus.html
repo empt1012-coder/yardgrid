@@ -8,6 +8,7 @@
   <meta name="description" content="Bloom &amp; Bed Plus is $5 a month or $30 a year. It saves garden plans and arrangements to your account. Every tool stays free.">
   <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/site.css">
+  <link rel="canonical" href="https://bloomandbedgarden.com/plus.html">
   <script src="js/config.js"></script>
   <script>yardMeta("/plus.html");</script>
 </head>
@@ -44,7 +45,7 @@
       <form id="accountForm">
         <label>Email <input id="accountEmailInput" type="email" autocomplete="username" required></label>
         <label>Password <input id="accountPasswordInput" type="password" minlength="8" autocomplete="current-password" required></label>
-        <label> <select id="accountMode"><option value="signin">Sign in</option><option value="create">Create account</option></select></label>
+        <label> <select id="accountMode" aria-label="Sign in or create an account"><option value="signin">Sign in</option><option value="create">Create account</option></select></label>
         <button type="submit" class="btn">Continue</button>
       </form>
     </div>
@@ -55,9 +56,11 @@
     <nav class="nav">
       <a href="zones/">Zones</a>
       <a href="plants/">Plants</a>
+      <a href="about.html">About</a>
       <a href="plus.html">Plus</a>
-      <a href="terms.html">Terms</a>
       <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a href="contact.html">Contact</a>
     </nav>
   </footer>
   <script src="js/account.js"></script>

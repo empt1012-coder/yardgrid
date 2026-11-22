@@ -151,6 +151,11 @@
   }
   function showPlusMember(isPlus) {
     if ($('plusBuy')) $('plusBuy').hidden = !!isPlus;
+    else {
+      /* The planner has the buttons without the plus.html wrappers. A member should not see buy buttons. */
+      if ($('plusMonthly')) $('plusMonthly').hidden = !!isPlus;
+      if ($('plusYearly')) $('plusYearly').hidden = !!isPlus;
+    }
     if ($('plusManage')) $('plusManage').hidden = !isPlus;
   }
   function userEmail(data) {

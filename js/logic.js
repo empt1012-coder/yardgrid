@@ -185,8 +185,88 @@
     return Math.sqrt(dx * dx + dy * dy);
   }
 
+  /* A garden can arrive from a share link, an imported file, or browser storage. The planner
+     writes its fields into HTML, so keep only the fields it uses, with ids and numbers in a safe shape.
+     plantIds and libraryIds are lookups of known ids ({ id: true }). */
+  const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
+  function safeId(v) { return typeof v === 'string' && SAFE_ID.test(v) ? v : null; }
+  function num(v, lo, hi, fallback) {
+    const n = Number(v);
+    if (typeof v === 'boolean' || v === null || v === '' || !isFinite(n)) return fallback;
+    return Math.min(hi, Math.max(lo, n));
+  }
+  function int(v, lo, hi, fallback) {
+    const n = num(v, lo, hi, null);
+    return n == null ? fallback : Math.round(n);
+  }
+  function text(v, max, fallback) {
+    return typeof v === 'string' ? v.slice(0, max) : fallback;
+  }
+  function list(v, max) { return Array.isArray(v) ? v.slice(0, max) : []; }
+  function cleanGarden(g, plantIds, libraryIds) {
+    g = g && typeof g === 'object' ? g : {};
+    plantIds = plantIds || {};
+    libraryIds = libraryIds || {};
+    const BIG = 100000;
+    const out = {
+      name: text(g.name, 80, 'My garden'),
+      frost: parseISO(g.frost) ? g.frost : '',
+      ppm: num(g.ppm, 6, 200, 42),
+      panX: num(g.panX, -BIG, BIG, 24),
+      panY: num(g.panY, -BIG, BIG, 24),
+      grid: g.grid !== false,
+      opacity: num(g.opacity, 0, 1, 0.62),
+      mode: g.mode === 'place' ? 'place' : 'grid',
+      photo: null,
+      beds: [], plants: [], pieces: [], stamps: []
+    };
+    if (safeId(g.id)) out.id = g.id;
+    if (g.photo && typeof g.photo === 'object') {
+      out.photo = {
+        x: num(g.photo.x, -BIG, BIG, 0), y: num(g.photo.y, -BIG, BIG, 0),
+        wFt: num(g.photo.wFt, 0.1, 1000, 18), hFt: num(g.photo.hFt, 0.1, 1000, 18),
+        natW: int(g.photo.natW, 1, 20000, 1), natH: int(g.photo.natH, 1, 20000, 1)
+      };
+    }
+    const bedIds = {};
+    list(g.beds, 200).forEach(function (b) {
+      if (!b || !safeId(b.id) || bedIds[b.id]) return;
+      bedIds[b.id] = true;
+      out.beds.push({
+        id: b.id, name: text(b.name, 80, 'Bed'),
+        x: num(b.x, -BIG, BIG, 0), y: num(b.y, -BIG, BIG, 0),
+        w: int(b.w, 1, 50, 4), h: int(b.h, 1, 50, 8)
+      });
+    });
+    list(g.plants, 5000).forEach(function (p) {
+      if (!p || !safeId(p.id) || !bedIds[p.bedId] || !plantIds[p.plantId]) return;
+      out.plants.push({ id: p.id, bedId: p.bedId, plantId: p.plantId, c: int(p.c, 0, 49, 0), r: int(p.r, 0, 49, 0) });
+    });
+    const stampIds = {};
+    list(g.stamps, 500).forEach(function (s) {
+      if (!s || !safeId(s.id) || stampIds[s.id]) return;
+      stampIds[s.id] = true;
+      out.stamps.push({ id: s.id, name: text(s.name, 80, 'Picture'), w: int(s.w, 1, 20000, 360), h: int(s.h, 1, 20000, 360) });
+    });
+    list(g.pieces, 2000).forEach(function (p) {
+      if (!p || !safeId(p.id)) return;
+      const kind = p.kind === 'icon' || p.kind === 'library' ? p.kind : 'stamp';
+      out.pieces.push({
+        id: p.id, kind: kind,
+        stampId: kind === 'stamp' && stampIds[p.stampId] ? p.stampId : null,
+        plantId: kind === 'icon' && plantIds[p.plantId] ? p.plantId : null,
+        libraryId: kind === 'library' && libraryIds[p.libraryId] ? p.libraryId : null,
+        x: num(p.x, -BIG, BIG, 0), y: num(p.y, -BIG, BIG, 0),
+        wFt: num(p.wFt, 0.05, 1000, 1), hFt: num(p.hFt, 0.05, 1000, 1),
+        rot: num(p.rot, -36000, 36000, 0), flip: p.flip === true, z: int(p.z, -BIG, BIG, 0)
+      });
+    });
+    return out;
+  }
+
   return {
     parseISO: parseISO,
+    cleanGarden: cleanGarden,
     addDays: addDays,
     fmt: fmt,
     rangeText: rangeText,

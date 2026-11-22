@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="google-site-verification" content="5aUDvTAJZvLllM0J9P71zy-qEro_l_k9VWzHumEw2vs" />
   <title>Plan a bed · Bloom &amp; Bed Garden</title>
+  <meta name="description" content="Free garden planner. Draw beds in feet, place plants on 1-foot squares, and get planting dates from your frost date.">
   <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/site.css">
+  <link rel="canonical" href="https://bloomandbedgarden.com/plan.html">
   <script src="js/config.js"></script>
   <script>yardMeta("/plan.html");</script>
 </head>
@@ -22,6 +24,7 @@
       <a href="about.html">About</a>
     </nav>
   </header>
+  <h1 class="visually-hidden">Garden bed planner</h1>
   <section class="how" id="howGrid">
     <div class="how-bar">
       <strong>How it works</strong>
@@ -174,7 +177,7 @@
           <form id="accountForm">
             <label>Email <input id="accountEmailInput" type="email" autocomplete="username" required></label>
             <label>Password <input id="accountPasswordInput" type="password" minlength="8" autocomplete="current-password" required></label>
-            <label> <select id="accountMode"><option value="signin">Sign in</option><option value="create">Create account</option></select></label>
+            <label> <select id="accountMode" aria-label="Sign in or create an account"><option value="signin">Sign in</option><option value="create">Create account</option></select></label>
             <button type="submit" class="primary">Continue</button>
           </form>
           <p class="muted"><a href="plus.html">Bloom &amp; Bed Plus</a> is $5 a month or $30 a year. The tools stay free.</p>
