@@ -17,6 +17,7 @@ assert.ok(!/@import/.test(css), 'no @import');
 });
 assert.ok(/SIL Open Font License/.test(fs.readFileSync(path.join(root, 'fonts/OFL-Inter.txt'), 'utf8')), 'Inter license text');
 assert.ok(/font-display: swap/.test(css), 'fonts swap in');
+assert.ok(/body\.home \{ background: [^;]*home-garden-sm\.webp/.test(css) && css.includes('images/home-garden.webp'), 'home keeps the full-page garden background');
 
 /* Every page uses the shared header, with a text logo and a labelled nav. */
 function pages(dir) {
