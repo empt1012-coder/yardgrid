@@ -2,7 +2,10 @@
 (function () {
   var TOKEN = 'yardgrid-auth';
   var PENDING_KEY = 'yardgrid-pending-plus';
+  var SIGNUP_KEY = 'yardgrid-signup-email';
+  var HASH_KEY = 'yardgrid-identity-hash';
   var PENDING_MS = 60 * 60 * 1000;
+  var justConfirmed = false;
   function $(id) { return document.getElementById(id); }
   function on(id, event, fn) {
     var el = $(id);
@@ -45,6 +48,51 @@
       return '';
     }
   }
+  function lastSignupEmail() {
+    try { return (localStorage.getItem(SIGNUP_KEY) || '').trim(); }
+    catch (e) { return ''; }
+  }
+  function rememberSignupEmail(email) {
+    try { localStorage.setItem(SIGNUP_KEY, email); } catch (e) {}
+  }
+  function decodePart(value, plusAsPlus) {
+    var encoded = plusAsPlus ? String(value || '').replace(/\+/g, '%2B') : String(value || '').replace(/\+/g, '%20');
+    try { return decodeURIComponent(encoded); }
+    catch (e) { return value; }
+  }
+  function parsePairs(raw) {
+    var out = {};
+    String(raw || '').replace(/^[#?]/, '').split('&').forEach(function (pair) {
+      if (!pair) return;
+      var i = pair.indexOf('=');
+      var k = decodePart(i < 0 ? pair : pair.slice(0, i), false);
+      var v = i < 0 ? '' : decodePart(pair.slice(i + 1), true);
+      if (k && out[k] == null) out[k] = v;
+    });
+    return out;
+  }
+  function authParams() {
+    var out = {};
+    function merge(raw) {
+      var parsed = parsePairs(raw);
+      Object.keys(parsed).forEach(function (k) {
+        if (out[k] == null) out[k] = parsed[k];
+      });
+    }
+    merge(location.hash);
+    merge(location.search);
+    try { merge(sessionStorage.getItem(HASH_KEY) || ''); } catch (e) {}
+    var path = location.pathname || '';
+    if (path.indexOf('%23') !== -1 || path.indexOf('confirmation_token') !== -1 || path.indexOf('invite_token') !== -1) {
+      var recovered = path.replace(/^\/+/, '');
+      try { recovered = decodeURIComponent(recovered); } catch (e) {}
+      merge(recovered);
+    }
+    return out;
+  }
+  function clearStoredHash() {
+    try { sessionStorage.removeItem(HASH_KEY); } catch (e) {}
+  }
   function authHeaders(json) {
     var a = auth();
     var headers = {};
@@ -58,8 +106,10 @@
     try { data = await res.json(); } catch (e) { data = {}; }
     if (!res.ok) {
       var message = (data.msg || data.error_description || data.message || 'Sign-in is not available yet.');
-      if (res.status === 404) message = 'Accounts are not turned on yet.';
-      throw new Error(message);
+      if (res.status === 404) message = data.msg || 'Accounts are not turned on yet.';
+      var err = new Error(message);
+      err.code = data.error || data.code;
+      throw err;
     }
     return data;
   }
@@ -106,17 +156,20 @@
   function userEmail(data) {
     return (data && (data.email || (data.user && data.user.email))) || '';
   }
+  function unconfirmedMessage(err) {
+    var text = ((err && err.message) || '') + ' ' + ((err && err.code) || '');
+    return /not confirm|not verif|email_not_confirmed|unconfirm/i.test(text);
+  }
   async function consumeIdentityHash() {
-    var raw = (location.hash || '').replace(/^#/, '');
-    if (!raw) return false;
-    var params = new URLSearchParams(raw.replace(/;/g, '&'));
-    var confirmation = params.get('confirmation_token');
-    var invite = params.get('invite_token');
-    var access = params.get('access_token');
-    var refresh = params.get('refresh_token');
-    var hashError = params.get('error_description') || params.get('error');
+    var params = authParams();
+    var confirmation = params.confirmation_token;
+    var invite = params.invite_token;
+    var access = params.access_token;
+    var refresh = params.refresh_token;
+    var hashError = params.error_description || params.error;
     if (!confirmation && !invite && !access && !hashError) return false;
     history.replaceState(null, '', location.pathname + location.search);
+    clearStoredHash();
     if (hashError) throw new Error(hashError);
     if (confirmation || invite) {
       var data = await identity('/verify', {
@@ -124,18 +177,22 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: confirmation ? 'signup' : 'invite', token: confirmation || invite })
       });
-      if (data.access_token) saveAuth(data, userEmail(data));
+      if (data.access_token) {
+        saveAuth(data, userEmail(data));
+        justConfirmed = true;
+      }
       return true;
     }
     if (access) {
-      saveAuth({ access_token: access, refresh_token: refresh || '' }, params.get('email') || '');
+      saveAuth({ access_token: access, refresh_token: refresh || '' }, params.email || '');
+      justConfirmed = true;
       return true;
     }
     return false;
   }
   async function refreshStatus() {
     if (!auth()) {
-      if ($('accountBox')) status('Free. One garden plan and one arrangement stay in this browser.');
+      if ($('accountBox') && !justConfirmed) status('Free. One garden plan and one arrangement stay in this browser.');
       if ($('accountSignedIn')) $('accountSignedIn').hidden = true;
       if ($('accountSignedOut') && $('accountBox')) $('accountSignedOut').hidden = false;
       showPlusMember(false);
@@ -146,7 +203,8 @@
     try {
       var me = await api('/api/me', { headers: authHeaders(false) });
       if ($('accountEmail')) $('accountEmail').textContent = me.email || auth().email || '';
-      status(me.plus
+      if (justConfirmed) status("Email confirmed. You're signed in.");
+      else status(me.plus
         ? 'Bloom & Bed Plus is on. Saves in your account open on any device.'
         : 'Signed in. Plus adds cloud save. The tools stay free either way.');
       if ($('cloudSave')) $('cloudSave').disabled = !me.plus;
@@ -157,8 +215,9 @@
       }
       return me;
     } catch (err) {
-      status(err.message);
-      return null;
+      if (justConfirmed) status("Email confirmed. You're signed in.");
+      else status(err.message);
+      return justConfirmed ? { plus: false } : null;
     }
   }
   function renderCloud(items) {
@@ -270,11 +329,18 @@
       var email = $('accountEmailInput').value.trim();
       var password = $('accountPasswordInput').value;
       var creating = $('accountMode').value === 'create';
+      if (creating && lastSignupEmail() && lastSignupEmail().toLowerCase() === email.toLowerCase()) {
+        status(readPendingPlan()
+          ? "Check your email to confirm, then you'll go straight to checkout. A new email was not sent, so the earlier link still works."
+          : 'Check the confirmation email we already sent. A new email was not sent, so the earlier link still works.');
+        return;
+      }
       var job = creating
         ? identity('/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, password: password }) })
         : identity('/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'grant_type=password&username=' + encodeURIComponent(email) + '&password=' + encodeURIComponent(password) });
       job.then(function (data) {
         if (creating && !data.access_token) {
+          rememberSignupEmail(email);
           status(readPendingPlan()
             ? "Check your email to confirm, then you'll go straight to checkout."
             : 'Check your email to confirm the account, then sign in.');
@@ -283,7 +349,13 @@
         saveAuth(data.access_token ? data : { access_token: data.token }, email);
         if (data.access_token) saveAuth(data, email);
         refreshStatus().then(continuePendingCheckout);
-      }).catch(function (err) { status(err.message); });
+      }).catch(function (err) {
+        if (unconfirmedMessage(err)) {
+          status('This email is not confirmed yet. Open the confirmation link we already sent. Asking for a new email would make the earlier link stop working.');
+          return;
+        }
+        status(err.message);
+      });
     });
     on('accountSignOut', 'click', function () { clearAuth(); clearPendingPlan(); refreshStatus(); });
     on('cloudSave', 'click', function () { saveToAccount().catch(function (err) { status(err.message); }); });
