@@ -115,3 +115,12 @@ No sourced “grows well together” companion pair was added. The marigold and 
 ## Plant library pictures
 
 The pictures in `images/library/` are generated for this site. They are not photographs of a real garden, and they are not stock, licensed, or Creative Commons photos. Each card says “(generated image)”. They are examples of the named plant or object. They are not a source for spacing, bloom months, or planting dates.
+
+## Zone and plant pages (21 November 2026)
+
+`zones/` and `plants/` are built by `scripts/build-pages.mjs` from `data/charts/lookup.js`, `js/plants.js`, and `js/logic.js`. Run `node scripts/build-pages.mjs` after changing any of them; `tests/pages.test.js` fails if the pages are stale.
+
+- Zone medians use only stations in the contiguous 48 states and DC. Alaska stations carry zones as warm as 7a, so they are left out of these pages.
+- A last-frost date in August to December is counted as the winter before, and a first-frost date in January to June as the winter after, so zone 9b to 10b medians do not wrap across New Year.
+- The "middle half" range is the 25th to 75th percentile of station dates. Zones with fewer than 10 stations show the full range instead.
+- Planting dates use the same frost offsets as the planner, counted from the zone median. Plant pages repeat the notes and sources already on each plant record.
