@@ -163,35 +163,72 @@
 
   function pct(day) { return ((day - 1) / 365) * 100; }
 
-  function barStyle(a, b, color) {
-    var start = doy(String(a.getMonth() + 1).padStart(2, '0') + String(a.getDate()).padStart(2, '0'));
-    var end = doy(String(b.getMonth() + 1).padStart(2, '0') + String(b.getDate()).padStart(2, '0'));
+  function mmddOf(d) { return String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0'); }
+
+  /* One window as one or two rounded bars (two when it runs past Dec 31). */
+  function barHtml(a, b, kind, tip) {
+    var start = doy(mmddOf(a));
+    var end = doy(mmddOf(b));
     if (!start || !end) return '';
+    var t = ' title="' + esc(tip) + '"';
     if (end < start) {
-      return '<i class="bar" style="left:0;width:' + pct(end + 1) + '%;background:' + color + '"></i>' +
-        '<i class="bar" style="left:' + pct(start) + '%;width:' + (100 - pct(start)) + '%;background:' + color + '"></i>';
+      return '<i class="bar ' + kind + '"' + t + ' style="left:0;width:' + pct(end + 1).toFixed(2) + '%"></i>' +
+        '<i class="bar ' + kind + '"' + t + ' style="left:' + pct(start).toFixed(2) + '%;width:' + (100 - pct(start)).toFixed(2) + '%"></i>';
     }
-    var width = Math.max(0.8, pct(end) - pct(start) + (100 / 365));
-    return '<i class="bar" style="left:' + pct(start) + '%;width:' + width + '%;background:' + color + '"></i>';
+    var width = Math.max(1.2, pct(end) - pct(start) + (100 / 365));
+    return '<i class="bar ' + kind + '"' + t + ' style="left:' + pct(start).toFixed(2) + '%;width:' + width.toFixed(2) + '%"></i>';
   }
 
+  /* Month bands and gridlines drawn once behind every row, so the columns line up. */
+  function monthBands() {
+    var day = 1;
+    return MONTHS.map(function (m, i) {
+      var left = pct(day);
+      var width = (DIMS[i] / 365) * 100;
+      day += DIMS[i];
+      return '<i class="cal-band' + (i % 2 ? ' alt' : '') + '" style="left:' + left.toFixed(2) + '%;width:' + width.toFixed(2) + '%"></i>';
+    }).join('');
+  }
+
+  function monthHeads() {
+    var day = 1;
+    return MONTHS.map(function (m, i) {
+      var left = pct(day);
+      var width = (DIMS[i] / 365) * 100;
+      day += DIMS[i];
+      return '<span style="left:' + left.toFixed(2) + '%;width:' + width.toFixed(2) + '%"><b class="m-long">' + m + '</b><b class="m-short" aria-hidden="true">' + m.charAt(0) + '</b></span>';
+    }).join('');
+  }
+
+  var KINDS = [
+    ['indoor', 'Start indoors', 'Indoors'],
+    ['transplant', 'Set out', 'Set out'],
+    ['direct', 'Direct sow', 'Direct sow']
+  ];
+
   function plantingHtml(plants, logic, frostIso, firstMmdd) {
-    var heads = MONTHS.map(function (m) { return '<span>' + m + '</span>'; }).join('');
-    var marker = '';
-    if (firstMmdd && doy(firstMmdd)) marker = '<i class="frost-line" style="left:' + pct(doy(firstMmdd)) + '%" title="First 32°F"></i>';
+    var lastMmdd = frostIso ? frostIso.slice(5, 7) + frostIso.slice(8, 10) : '';
+    var lines = '';
+    var keys = KINDS.map(function (k) { return '<span class="key"><i class="swatch ' + k[0] + '"></i>' + k[1] + '</span>'; }).join('');
+    if (lastMmdd && doy(lastMmdd)) {
+      lines += '<i class="frost-line last" style="left:' + pct(doy(lastMmdd)).toFixed(2) + '%"></i>';
+      keys += '<span class="key"><i class="swatch line last"></i>Last 32°F, ' + esc(pretty(lastMmdd)) + '</span>';
+    }
+    if (firstMmdd && doy(firstMmdd)) {
+      lines += '<i class="frost-line first" style="left:' + pct(doy(firstMmdd)).toFixed(2) + '%"></i>';
+      keys += '<span class="key"><i class="swatch line first"></i>First 32°F, ' + esc(pretty(firstMmdd)) + '</span>';
+    }
     var rows = plants.map(function (plant) {
+      var words = logic.calendarRows([{ plantId: plant.id }], { [plant.id]: plant }, frostIso)[0];
       var bits = [];
-      function add(pair, color, label) {
+      KINDS.forEach(function (k) {
+        var pair = plant[k[0]];
         if (!pair || !frostIso) return;
         var a = logic.addDays(frostIso, pair[0]);
         var b = logic.addDays(frostIso, pair[1]);
         if (!a || !b) return;
-        bits.push(barStyle(a, b, color));
-      }
-      add(plant.indoor, '#2f6b4f');
-      add(plant.transplant, '#6b4a32');
-      add(plant.direct, '#c4a484');
-      var words = logic.calendarRows([{ plantId: plant.id }], { [plant.id]: plant }, frostIso)[0];
+        bits.push(barHtml(a, b, k[0], plant.name + ': ' + k[1].toLowerCase() + ' ' + (words[k[0]] || '')));
+      });
       var text = [];
       if (words.indoor) text.push('Indoors ' + words.indoor);
       if (words.transplant) text.push('Set out ' + words.transplant);
@@ -199,12 +236,15 @@
       if (words.timingNote) text.push(words.timingNote);
       var href = '../plan.html?plant=' + encodeURIComponent(plant.id) + (frostIso ? '&frost=' + encodeURIComponent(frostIso) : '');
       return '<article class="chart-row"><div class="chart-name"><a href="' + esc(href) + '">' + esc(plant.name) + '</a></div>' +
-        '<div class="track-scroll"><div class="track">' + marker + bits.join('') + '</div></div>' +
-        '<p class="muted">' + esc(text.join(' · ') || 'No frost-offset date in the sources used here.') + '</p></article>';
+        '<div class="track" aria-hidden="true">' + bits.join('') + '</div>' +
+        '<p class="chart-dates">' + esc(text.join(' · ') || 'No frost-offset date in the sources used here.') + '</p></article>';
     }).join('');
-    return '<div class="mgrid">' + heads + '</div>' +
-      '<p class="legend"><i style="background:#2f6b4f"></i> Start indoors <i style="background:#6b4a32"></i> Set out <i style="background:#c4a484"></i> Direct sow <i class="line"></i> First 32°F</p>' +
-      rows;
+    return '<div class="cal-legend">' + keys + '</div>' +
+      '<div class="cal">' +
+      '<div class="cal-head" aria-hidden="true"><span class="cal-corner">Plant</span><div class="cal-months">' + monthHeads() + '</div></div>' +
+      '<div class="cal-body"><div class="cal-grid" aria-hidden="true">' + monthBands() + lines + '</div>' + rows + '</div>' +
+      '</div>' +
+      '<p class="cal-hint">Pick a plant name to open the planner with these dates.</p>';
   }
 
   return {

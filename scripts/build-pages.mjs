@@ -124,6 +124,11 @@ export function zoneStats(data, zone) {
     lastLo: dayLabel(quantile(lasts, lasts.length < 10 ? 0 : 0.25)), lastHi: dayLabel(quantile(lasts, lasts.length < 10 ? 1 : 0.75)),
     firstLo: dayLabel(quantile(firsts, firsts.length < 10 ? 0 : 0.25)), firstHi: dayLabel(quantile(firsts, firsts.length < 10 ? 1 : 0.75)),
     season: mFirst - mLast,
+    days: {
+      last: mLast, first: mFirst,
+      lastLo: quantile(lasts, lasts.length < 10 ? 0 : 0.25), lastHi: quantile(lasts, lasts.length < 10 ? 1 : 0.75),
+      firstLo: quantile(firsts, firsts.length < 10 ? 0 : 0.25), firstHi: quantile(firsts, firsts.length < 10 ? 1 : 0.75)
+    },
     states: topStates.map((s) => ({ code: s, name: STATES[s], n: states[s] }))
   };
 }
@@ -183,6 +188,55 @@ export function plantSources(p) {
   return keys;
 }
 
+
+/* ---------- frost-season charts (plain HTML and CSS, no script) ---------- */
+const DIMS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const clampDay = (n) => Math.min(366, Math.max(1, n));
+const pctOf = (n) => (((clampDay(n) - 1) / 365) * 100).toFixed(2);
+function span(cls, a, b, extra = '') {
+  const l = Number(pctOf(a)), r = Number(pctOf(b));
+  return `<i class="${cls}" style="left:${l}%;width:${Math.max(0.6, r - l).toFixed(2)}%"${extra}></i>`;
+}
+function monthScale() {
+  let day = 1;
+  return MONTHS.map((m, i) => {
+    const s = `<span style="left:${pctOf(day)}%;width:${((DIMS[i] / 365) * 100).toFixed(2)}%"><b class="m-long">${m}</b><b class="m-short" aria-hidden="true">${m[0]}</b></span>`;
+    day += DIMS[i];
+    return s;
+  }).join('');
+}
+function bands() {
+  let day = 1;
+  return MONTHS.map((m, i) => {
+    const s = `<i class="cal-band${i % 2 ? ' alt' : ''}" style="left:${pctOf(day)}%;width:${((DIMS[i] / 365) * 100).toFixed(2)}%"></i>`;
+    day += DIMS[i];
+    return s;
+  }).join('');
+}
+function seasonChart(s) {
+  const d = s.days;
+  const label = `Zone ${s.zone}: median last 32°F ${s.last.text}${s.last.tag}, median first 32°F ${s.first.text}${s.first.tag}, about ${s.season} days between.`;
+  return `    <figure class="season">
+      <figcaption>Zone ${s.zone} frost-free stretch, from the median dates</figcaption>
+      <div class="season-chart" role="img" aria-label="${esc(label)}">
+        <div class="cal-months" aria-hidden="true">${monthScale()}</div>
+        <div class="season-track">${bands()}${span('season-range', d.lastLo, d.lastHi)}${span('season-range', d.firstLo, d.firstHi)}${span('season-band', d.last, d.first)}<b class="season-tag" style="left:${pctOf(d.last)}%">${s.last.text}</b><b class="season-tag end" style="left:${pctOf(d.first)}%">${s.first.text}</b></div>
+      </div>
+      <p class="cal-legend"><span class="key"><i class="swatch band"></i>Between the median frosts, about ${s.season} days</span><span class="key"><i class="swatch range"></i>${s.small ? 'All stations' : 'Middle half of stations'}</span></p>
+    </figure>`;
+}
+function seasonsChart(stats) {
+  const rows = stats.map((s) => `        <div class="seasons-row"><a href="/zones/zone-${s.zone}.html">${s.zone}</a><div class="season-track small">${bands()}${span('season-band', s.days.last, s.days.first, ` title="Zone ${s.zone}: ${s.last.text} to ${s.first.text}"`)}</div></div>`).join('\n');
+  return `    <figure class="season seasons">
+      <figcaption>Median frost-free stretch by zone</figcaption>
+      <div class="seasons-chart">
+        <div class="seasons-row head" aria-hidden="true"><span></span><div class="cal-months">${monthScale()}</div></div>
+${rows}
+      </div>
+      <p class="cal-legend"><span class="key"><i class="swatch band"></i>Median last 32°F to median first 32°F</span></p>
+    </figure>`;
+}
+
 /* ---------- page shell, matching the existing pages ---------- */
 function shell({ urlPath, title, description, body, jsonld, nav }) {
   return `<!DOCTYPE html>
@@ -200,8 +254,8 @@ function shell({ urlPath, title, description, body, jsonld, nav }) {
 ${jsonld ? '  <script type="application/ld+json">' + JSON.stringify(jsonld).replace(/</g, '\\u003c') + '</script>\n' : ''}</head>
 <body>
   <header class="site-header">
-    <a class="logo" href="/index.html"><img src="/images/logo.svg" alt="Bloom &amp; Bed Garden"></a>
-    <nav class="nav">
+    <a class="logo" href="/index.html"><img src="/images/favicon.svg" alt="" width="32" height="32"><span>Bloom &amp; Bed Garden</span></a>
+    <nav class="nav" aria-label="Main">
       <a href="/index.html">Home</a>
       <a href="/plan.html">Planner</a>
       <a href="/gallery.html">Gallery</a>
@@ -214,8 +268,8 @@ ${jsonld ? '  <script type="application/ld+json">' + JSON.stringify(jsonld).repl
 ${body}
   </main>
   <footer class="site-footer">
-    <span>Bloom &amp; Bed Garden</span>
-    <nav class="nav">
+    <div class="footer-brand"><strong>Bloom &amp; Bed Garden</strong><span>A free garden bed planner, with planting dates from extension guides and NOAA normals.</span></div>
+    <nav class="nav" aria-label="Footer">
       <a href="/zones/">Zones</a>
       <a href="/plants/">Plants</a>
       <a href="/about.html">About</a>
@@ -280,6 +334,7 @@ function zonePage(data, s, prev, next) {
     <p class="muted">A zone is a winter-low band from the USDA map, not a frost date. These medians are calculated here from NOAA station normals for stations matched to zone ${s.zone} in the contiguous United States. NOAA does not publish one frost date per zone. ${s.zipsWithFrost} of ${s.zips} zone ${s.zone} ZIP codes (${pct}%) have a NOAA station with both 32°F dates within 80 km. Your own ZIP gives a closer date:</p>
 ${zipBox()}
     <h2>Zone ${s.zone} frost dates</h2>
+${seasonChart(s)}
     <table>
       <thead><tr><th></th><th>Median</th><th>${s.small ? 'All stations' : 'Middle half of stations'}</th></tr></thead>
       <tbody>
@@ -311,6 +366,7 @@ function zonesIndex(stats) {
   const body = `    <h1>${esc(title)}</h1>
     <p class="lede">Pick your zone for its median frost dates and a planting table for 30 plants. If you know your ZIP code, that gives a closer date.</p>
 ${zipBox()}
+${seasonsChart(stats)}
     <table>
       <thead><tr><th>Zone</th><th>Median last 32°F</th><th>Median first 32°F</th><th>Days between</th><th>NOAA stations</th></tr></thead>
       <tbody>
