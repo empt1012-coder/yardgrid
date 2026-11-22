@@ -42,6 +42,7 @@ const SRC = {
   umnRaised: ['University of Minnesota Extension. “Raised bed gardens.”', 'https://extension.umn.edu/planting-and-growing-guides/raised-bed-gardens'],
   umnTomato: ['University of Minnesota Extension. “Growing tomatoes in home gardens.”', 'https://extension.umn.edu/vegetables/growing-tomatoes'],
   umnHerbs: ['University of Minnesota Extension. “Growing herbs in home gardens.”', 'https://extension.umn.edu/vegetables/growing-herbs'],
+  umnGarlic: ['University of Minnesota Extension. “Growing garlic in home gardens.”', 'https://extension.umn.edu/vegetables/growing-garlic'],
   clemson: ['Clemson Cooperative Extension HGIC. “Root-Knot Nematodes in the Vegetable Garden.”', 'https://hgic.clemson.edu/factsheet/root-knot-nematodes-in-the-vegetable-garden/'],
   lsu: ['LSU AgCenter. “Marigolds may help control some nematodes.”', 'https://www.lsuagcenter.com/portals/communications/news/news_archive/2009/may/get_it_growing/marigolds-may-help-control-some-nematodes']
 };
@@ -145,28 +146,28 @@ function rangeFor(logic, frostIso, pair) {
 function plantDates(logic, frostIso, p) {
   return { indoor: rangeFor(logic, frostIso, p.indoor), transplant: rangeFor(logic, frostIso, p.transplant), direct: rangeFor(logic, frostIso, p.direct) };
 }
-export function relText(pair) {
+export function relText(pair, frost = 'the average last frost') {
   if (!pair) return '';
   const [a, b] = pair;
-  if (a === 0 && b === 0) return 'around the average last frost';
-  if (a === b && Math.abs(a) < 7) return a + (Math.abs(a) === 1 ? ' day ' : ' days ') + (a > 0 ? 'after' : 'before') + ' the average last frost';
+  if (a === 0 && b === 0) return 'around ' + frost;
+  if (a === b && Math.abs(a) < 7) return a + (Math.abs(a) === 1 ? ' day ' : ' days ') + (a > 0 ? 'after' : 'before') + ' ' + frost;
   const w = (n) => Math.abs(n) / 7;
   if (a <= 0 && b <= 0) {
     const lo = w(b), hi = w(a);
-    return (lo === hi ? hi : lo + '–' + hi) + (hi === 1 ? ' week' : ' weeks') + ' before the average last frost';
+    return (lo === hi ? hi : lo + '–' + hi) + (hi === 1 ? ' week' : ' weeks') + ' before ' + frost;
   }
   if (a >= 0 && b >= 0) {
     const lo = w(a), hi = w(b);
-    return (lo === hi ? hi : lo + '–' + hi) + (hi === 1 ? ' week' : ' weeks') + ' after the average last frost';
+    return (lo === hi ? hi : lo + '–' + hi) + (hi === 1 ? ' week' : ' weeks') + ' after ' + frost;
   }
-  return w(a) + ' weeks before to ' + w(b) + ' weeks after the average last frost';
+  return w(a) + ' weeks before to ' + w(b) + ' weeks after ' + frost;
 }
 function countText(p) {
   const sq = p.spanC * p.spanR;
   return sq > 1 ? p.perSq + ' plant per ' + sq + ' squares' : p.perSq + ' per square foot';
 }
 function plantText(p) {
-  return [p.sun, p.daysNote, p.gridNote, p.directNote, p.indoorNote, p.transplantNote, p.timingNote, p.method].filter(Boolean).join(' ');
+  return [p.sun, p.daysNote, p.gridNote, p.directNote, p.indoorNote, p.transplantNote, p.fallDirectNote, p.timingNote, p.method].filter(Boolean).join(' ');
 }
 export function plantSources(p) {
   const t = plantText(p);
@@ -183,6 +184,7 @@ export function plantSources(p) {
   if (p.id === 'tomato' && /UMN/.test(t)) add('umnTomato');
   if (/herbs/.test(t) && /UMN/.test(t)) add('umnHerbs');
   if (/\(UMN\)|UMN groups|UMN:/.test([p.method, p.directNote, p.transplantNote].join(' '))) add('umnPlant');
+  if (p.fallDirect || /Growing garlic|first killing frost/.test(t)) add('umnGarlic');
   if (/Clemson/.test(t)) add('clemson');
   if (/LSU/.test(t)) add('lsu');
   return keys;
@@ -303,6 +305,13 @@ function zipBox() {
     </form>`;
 }
 
+/* First-frost dates tagged “the next winter” (January–June) belong to the year after YEAR. */
+function firstFrostIso(s) {
+  const mm = Number(s.first.mmdd.slice(0, 2));
+  const year = (s.first.tag && /next winter/.test(s.first.tag)) || mm <= 6 ? YEAR + 1 : YEAR;
+  return year + '-' + s.first.mmdd.slice(0, 2) + '-' + s.first.mmdd.slice(2);
+}
+
 /* ---------- zone page ---------- */
 function zonePage(data, s, prev, next) {
   const { plants, logic } = data;
@@ -324,7 +333,13 @@ function zonePage(data, s, prev, next) {
   ].filter(Boolean).join(' ');
   const rows = plants.map((p) => {
     const d = dates(p);
-    const note = (!d.indoor && !d.transplant && !d.direct) ? (p.timingNote || 'No frost-offset date in the sources used here.') : '';
+    let note = '';
+    if (p.fallDirect) {
+      const fall = rangeFor(logic, firstFrostIso(s), p.fallDirect);
+      note = (fall ? 'Plant cloves ' + fall + ', counted from the median first frost. ' : '') + (p.fallDirectNote || p.timingNote || '');
+    } else if (!d.indoor && !d.transplant && !d.direct) {
+      note = p.timingNote || 'No frost-offset date in the sources used here.';
+    }
     return `        <tr><td><a href="/plants/${p.id}.html">${esc(p.name)}</a></td><td>${esc(d.indoor || '—')}</td><td>${esc(d.transplant || '—')}</td><td>${esc(d.direct || '—')}</td></tr>` +
       (note ? `\n        <tr><td></td><td colspan="3" class="muted">${esc(note)}</td></tr>` : '');
   }).join('\n');
@@ -389,6 +404,7 @@ function plantPage(data, p, stats) {
   if (p.indoor) timing.push('start indoors ' + relText(p.indoor));
   if (p.transplant) timing.push('set out ' + relText(p.transplant));
   if (p.direct) timing.push('direct sow ' + relText(p.direct));
+  if (p.fallDirect) timing.push('plant cloves ' + relText(p.fallDirect, 'the average first frost'));
   const daysWord = /^[\d–-]+$/.test(p.days) ? p.days + ' days' : p.days.replace(/^([\d–-]+) from /, '$1 days from ');
   const description = p.name + ': ' + countText(p) + ' in a square-foot bed, ' + daysWord + (timing.length ? '; ' + timing.join('; ') : '') + '. Numbers from extension guides.';
   const answer = `${p.name}: <strong>${esc(countText(p))}</strong>. Days to harvest: <strong>${esc(daysWord)}</strong>.` +
@@ -401,18 +417,25 @@ function plantPage(data, p, stats) {
     p.indoor ? ['Start indoors', relText(p.indoor) + '. ' + (p.indoorNote || '')] : null,
     p.transplant ? ['Set out', relText(p.transplant) + '. ' + (p.transplantNote || '')] : null,
     p.direct ? ['Direct sow', relText(p.direct) + '. ' + (p.directNote || '')] : null,
+    p.fallDirect ? ['Plant cloves', relText(p.fallDirect, 'the average first frost') + '. ' + (p.fallDirectNote || '')] : null,
     p.timingNote ? ['Timing note', p.timingNote] : null,
     ['Light', p.sun],
     ['How to plant', p.method]
   ].filter(Boolean);
   const factRows = facts.map((f) => `        <tr><th>${esc(f[0])}</th><td>${esc(f[1].trim())}</td></tr>`).join('\n');
-  const hasDates = p.indoor || p.transplant || p.direct;
+  const hasSpring = p.indoor || p.transplant || p.direct;
+  const hasFall = !!p.fallDirect;
+  const hasDates = hasSpring || hasFall;
   const cols = [p.indoor ? 'indoor' : '', p.transplant ? 'transplant' : '', p.direct ? 'direct' : ''].filter(Boolean);
   const colName = { indoor: 'Start indoors', transplant: 'Set out', direct: 'Direct sow' };
-  const zoneRows = hasDates ? stats.map((s) => {
+  const zoneRows = hasSpring ? stats.map((s) => {
     const iso = YEAR + '-' + s.last.mmdd.slice(0, 2) + '-' + s.last.mmdd.slice(2);
     const d = plantDates(logic, iso, p);
     return `        <tr><td><a href="/zones/zone-${s.zone}.html">${s.zone}</a></td><td>${s.last.text}</td>${cols.map((c) => '<td>' + esc(d[c]) + '</td>').join('')}</tr>`;
+  }).join('\n') : '';
+  const fallRows = hasFall ? stats.map((s) => {
+    const fall = rangeFor(logic, firstFrostIso(s), p.fallDirect);
+    return `        <tr><td><a href="/zones/zone-${s.zone}.html">${s.zone}</a></td><td>${s.first.text}${s.first.tag}</td><td>${esc(fall)}</td></tr>`;
   }).join('\n') : '';
   const srcs = plantSources(p).map((k) => `      <li>${esc(SRC[k][0])} <a href="${SRC[k][1]}">${esc(SRC[k][1].replace(/^https:\/\//, '').split('/')[0])}</a></li>`).join('\n');
   const body = `    <h1>${esc(title)}</h1>
@@ -422,12 +445,19 @@ function plantPage(data, p, stats) {
 ${factRows}
       </tbody>
     </table>
-${hasDates ? `    <h2>${esc(p.name)} planting dates by zone</h2>
+${hasSpring ? `    <h2>${esc(p.name)} planting dates by zone</h2>
     <p>Counted from each zone’s median last 32°F date (NOAA 1991–2020). Your ZIP code gives a closer date on the <a href="/charts/planting-calendar.html">planting calendar</a>.</p>
     <table>
       <thead><tr><th>Zone</th><th>Median last frost</th>${cols.map((c) => '<th>' + colName[c] + '</th>').join('')}</tr></thead>
       <tbody>
 ${zoneRows}
+      </tbody>
+    </table>` : hasFall ? `    <h2>${esc(p.name)} planting dates by zone</h2>
+    <p>Counted from each zone’s median first 32°F date (NOAA 1991–2020), ${esc(relText(p.fallDirect, 'the average first frost'))}. Your ZIP code gives a closer date on the <a href="/charts/what-to-plant.html">what to plant this week</a> tool.</p>
+    <table>
+      <thead><tr><th>Zone</th><th>Median first frost</th><th>Plant cloves</th></tr></thead>
+      <tbody>
+${fallRows}
       </tbody>
     </table>` : `    <p>No frost-offset dates are shown for ${esc(lower)}, because the sources used here do not give one.</p>`}
     <p><a class="btn" href="/plan.html?plant=${encodeURIComponent(p.id)}">Place ${esc(lower)} in the planner</a> <a class="btn secondary" href="/plants/">All plants</a></p>
@@ -445,7 +475,7 @@ function plantsIndex(plants) {
   const title = 'Plant spacing and planting times for 30 garden plants';
   const description = 'Plants per square foot, days to harvest, and planting time relative to the last frost for the 30 plants in the Bloom & Bed planner.';
   const rows = plants.map((p) => {
-    const when = p.indoor ? 'Indoors ' + relText(p.indoor) : p.transplant ? 'Set out ' + relText(p.transplant) : p.direct ? 'Sow ' + relText(p.direct) : 'See page';
+    const when = p.indoor ? 'Indoors ' + relText(p.indoor) : p.transplant ? 'Set out ' + relText(p.transplant) : p.direct ? 'Sow ' + relText(p.direct) : p.fallDirect ? 'Plant cloves ' + relText(p.fallDirect, 'the average first frost') : 'See page';
     return `        <tr><td><a href="/plants/${p.id}.html">${esc(p.name)}</a></td><td>${esc(countText(p))}</td><td>${esc(p.days)}</td><td>${esc(when.replace(' the average last frost', ' last frost'))}</td></tr>`;
   }).join('\n');
   const body = `    <h1>${esc(title)}</h1>

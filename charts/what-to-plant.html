@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google-site-verification" content="5aUDvTAJZvLllM0J9P71zy-qEro_l_k9VWzHumEw2vs" />
+  <title>What to plant this week · Bloom &amp; Bed Garden</title>
+  <meta name="description" content="What to plant this week: enter a ZIP code or USDA zone to see what to start indoors, direct sow, or transplant, from extension windows and NOAA frost dates.">
+  <link rel="icon" href="../images/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/site.css">
+  <link rel="canonical" href="https://bloomandbedgarden.com/charts/what-to-plant.html">
+  <script src="../js/config.js"></script>
+  <script>yardMeta("/charts/what-to-plant.html");</script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="logo" href="../index.html"><img src="../images/favicon.svg" alt="" width="32" height="32"><span>Bloom &amp; Bed Garden</span></a>
+    <nav class="nav" aria-label="Main">
+      <a href="../index.html">Home</a>
+      <a href="../plan.html">Planner</a>
+      <a href="../gallery.html">Gallery</a>
+      <a href="planting-calendar.html" aria-current="page">Charts</a>
+      <a href="../guides/raised-bed.html">Guides</a>
+      <a href="../about.html">About</a>
+    </nav>
+  </header>
+  <main class="wrap">
+    <h1>What to plant this week</h1>
+    <p class="lede">Enter a US ZIP code or pick a USDA zone. The list uses your last spring and first fall 32°F dates and the same extension windows as the planting calendar.</p>
+    <nav class="chart-nav" aria-label="Charts">
+      <a href="planting-calendar.html">Planting calendar</a>
+      <a href="what-to-plant.html" aria-current="page">This week</a>
+      <a href="bloom.html">What’s in bloom</a>
+      <a href="cut-flowers.html">Cut flowers</a>
+      <a href="monthly-tasks.html">Monthly tasks</a>
+      <a href="companions.html">Companions</a>
+      <a href="checklist.html">Printable checklist</a>
+    </nav>
+    <div class="row">
+      <label>USDA zone <select id="zone"></select></label>
+      <label>ZIP code <input id="zip" inputmode="numeric" maxlength="5" placeholder="10001"></label>
+      <button type="button" class="btn" id="lookup">Look up ZIP</button>
+    </div>
+    <p id="status" class="note"></p>
+    <p class="muted">Dates are averages. Local weather varies, and soil temperature is a better planting signal when you have it. A zone is a winter-low band, not a frost date. ZIP frost dates use the nearest NOAA station within 80 km. A zone with no ZIP uses the median of contiguous-US stations matched to that zone. Weeks run Sunday through Saturday.</p>
+    <div id="results"></div>
+    <p class="muted">Each plant name opens its page, with spacing and the source for the window. The full year is on the <a href="planting-calendar.html" id="calendarLink">planting calendar</a>.</p>
+    <p class="muted">Sources: <a href="https://prism.oregonstate.edu/phzm">2023 USDA zone ZIP listings</a> (PRISM Group, Oregon State University), <a href="https://www.ncei.noaa.gov/products/land-based-station/us-climate-normals">NOAA 1991–2020 Climate Normals</a>, and the extension windows in <a href="../SOURCES.md">SOURCES.md</a>. Census 2024 ZCTA points place each ZIP. Garlic clove dates follow University of Minnesota Extension, counted from the first 32°F date.</p>
+  </main>
+  <footer class="site-footer">
+    <div class="footer-brand"><strong>Bloom &amp; Bed Garden</strong><span>A free garden bed planner, with planting dates from extension guides and NOAA normals.</span></div>
+    <nav class="nav" aria-label="Footer">
+      <a href="../zones/">Zones</a>
+      <a href="../plants/">Plants</a>
+      <a href="../about.html">About</a>
+      <a href="../plus.html">Plus</a>
+      <a href="../privacy.html">Privacy</a>
+      <a href="../terms.html">Terms</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+  </footer>
+  <script src="../data/charts/lookup.js"></script>
+  <script src="../js/plants.js"></script>
+  <script src="../js/logic.js"></script>
+  <script src="../js/charts.js"></script>
+  <script src="../js/what-to-plant.js"></script>
+  <script>
+    (function () {
+      var lookup = window.YardLookup;
+      var zoneEl = document.getElementById('zone');
+      var zipEl = document.getElementById('zip');
+      var status = document.getElementById('status');
+      var results = document.getElementById('results');
+      var place = null;
+      YardCharts.zones(lookup).forEach(function (z) {
+        var opt = document.createElement('option');
+        opt.value = z;
+        opt.textContent = z;
+        zoneEl.appendChild(opt);
+      });
+      function remember() {
+        if (!place || !place.last) return;
+        var year = YardCharts.planYear();
+        var frost = YardCharts.iso(place.last, year);
+        var rec = {
+          zone: place.zone, zip: place.zip || '', frost: frost,
+          first: YardCharts.iso(place.first, year),
+          station: place.station || '', stationName: place.stationName || '',
+          km: place.km == null ? '' : place.km, basis: place.basis, n: place.n || 0
+        };
+        try { localStorage.setItem('yardgrid-zone', JSON.stringify(rec)); } catch (e) {}
+        document.getElementById('calendarLink').href = 'planting-calendar.html?zone=' + encodeURIComponent(place.zone) + (place.zip ? '&zip=' + encodeURIComponent(place.zip) : '');
+      }
+      function draw() {
+        status.textContent = YardCharts.placeText(place);
+        if (!place) { results.innerHTML = ''; return; }
+        var rep = YardWeek.report(YardPlants.list, YardLogic, YardCharts, place, new Date());
+        results.innerHTML = YardWeek.reportHtml(rep, YardLogic, YardCharts, { zone: place.zone });
+        remember();
+      }
+      function fromZone() {
+        place = YardCharts.zoneMedian(lookup, zoneEl.value) || { zone: zoneEl.value, basis: 'zone-median' };
+        draw();
+      }
+      zoneEl.addEventListener('change', function () { zipEl.value = ''; fromZone(); });
+      document.getElementById('lookup').addEventListener('click', function () {
+        var zip = zipEl.value.replace(/\D/g, '');
+        if (zip.length === 4) zip = '0' + zip;
+        zipEl.value = zip;
+        var found = YardCharts.zipPlace(lookup, zip);
+        if (!found) { status.textContent = 'That ZIP is not in the 2023 USDA ZIP listing used here.'; return; }
+        place = found;
+        zoneEl.value = found.zone;
+        draw();
+      });
+      var saved = null;
+      try { saved = JSON.parse(localStorage.getItem('yardgrid-zone') || 'null'); } catch (e) {}
+      var q = new URLSearchParams(location.search);
+      if (q.get('zip')) { zipEl.value = q.get('zip'); document.getElementById('lookup').click(); }
+      else if (q.get('zone') && YardCharts.zones(lookup).indexOf(q.get('zone')) >= 0) { zoneEl.value = q.get('zone'); fromZone(); }
+      else if (saved && saved.zip) { zipEl.value = saved.zip; document.getElementById('lookup').click(); }
+      else if (saved && saved.zone) { zoneEl.value = saved.zone; fromZone(); }
+      else { zoneEl.value = '6b'; fromZone(); }
+    })();
+  </script>
+  <script src="../js/account.js"></script>
+</body>
+</html>

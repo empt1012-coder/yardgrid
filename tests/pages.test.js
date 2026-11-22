@@ -57,6 +57,10 @@ const root = path.join(__dirname, '..');
   });
   assert.strictEqual(gen.relText([-28, -14]), '2–4 weeks before the average last frost');
   assert.strictEqual(gen.relText([14, 14]), '2 weeks after the average last frost');
+  assert.strictEqual(gen.relText([7, 14], 'the average first frost'), '1–2 weeks after the average first frost');
+  const garlicPage = fs.readFileSync(path.join(root, 'plants/garlic.html'), 'utf8');
+  assert.ok(garlicPage.includes('1–2 weeks after the average first frost'), 'garlic page shows the UMN fall offset');
+  assert.ok(garlicPage.includes('/charts/what-to-plant.html'), 'garlic page links to the week tool');
 
   ['index.html', 'charts/planting-calendar.html', 'guides/frost-date.html'].forEach(function (f) {
     assert.ok(fs.readFileSync(path.join(root, f), 'utf8').includes('zones/"'), f + ' links to /zones/');

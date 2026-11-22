@@ -76,6 +76,8 @@
       daysNote: 'Days to harvest from the UF/IFAS Leon County square-foot guide. That guide is for Northwest Florida.',
       gridNote: '9 per square at 4 in (SDSU). UF/IFAS lists 4 per square. This grid follows SDSU because that sheet is the square-foot count we use when it names the crop.',
       timingNote: 'UF/IFAS plants garlic in October–November in Northwest Florida. That month range is not your frost date. Check a local extension note before you plant.',
+      fallDirect: [7, 14],
+      fallDirectNote: 'UMN: plant cloves in the fall, usually one or two weeks after the first killing frost. The dates here count from the average first 32°F date. UF/IFAS uses October–November in Northwest Florida, and that month range is not turned into a frost offset.',
       method: 'Plant cloves, not seed (UF/IFAS).'
     },
     {
