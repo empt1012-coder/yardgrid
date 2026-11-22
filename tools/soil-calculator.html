@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google-site-verification" content="5aUDvTAJZvLllM0J9P71zy-qEro_l_k9VWzHumEw2vs" />
+  <title>Raised bed soil calculator · Bloom &amp; Bed Garden</title>
+  <meta name="description" content="Find how much soil a raised bed holds, in cubic feet, cubic yards, and bags. A 4 × 8 foot bed, 12 inches deep, takes 32 cubic feet.">
+  <link rel="icon" href="../images/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/site.css">
+  <link rel="canonical" href="https://bloomandbedgarden.com/tools/soil-calculator.html">
+  <script src="../js/config.js"></script>
+  <script>yardMeta("/tools/soil-calculator.html");</script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="logo" href="../index.html"><img src="../images/favicon.svg" alt="" width="32" height="32"><span>Bloom &amp; Bed Garden</span></a>
+    <nav class="nav" aria-label="Main">
+      <a href="../index.html">Home</a>
+      <a href="../plan.html">Planner</a>
+      <a href="../gallery.html">Gallery</a>
+      <a href="../charts/planting-calendar.html">Charts</a>
+      <a href="../guides/raised-bed.html">Guides</a>
+      <a href="../about.html">About</a>
+    </nav>
+  </header>
+  <main class="wrap">
+    <h1>Raised bed soil calculator</h1>
+    <p class="lede">Enter the inside length, width, and depth of your beds. The totals are cubic feet, cubic yards, and how many common bags that fills.</p>
+
+    <div id="beds" class="soil-beds"></div>
+    <p class="soil-actions"><button type="button" class="btn secondary" id="addBed">Add another bed size</button></p>
+
+    <div class="card soil-results" id="results" aria-live="polite">
+      <h2>Soil needed</h2>
+      <p class="soil-total" id="totalFt">32 cubic feet</p>
+      <p class="soil-yards" id="totalYd">1.19 cubic yards</p>
+      <p class="muted" id="resultNote">For one 4 × 8 foot bed, 12 inches deep.</p>
+      <h3>Bags of mixed soil</h3>
+      <table>
+        <thead>
+          <tr><th>Bag size</th><th>Bags to buy</th></tr>
+        </thead>
+        <tbody id="bagRows">
+          <tr><th scope="row">1 cubic foot</th><td>32</td></tr>
+          <tr><th scope="row">1.5 cubic feet</th><td>22</td></tr>
+          <tr><th scope="row">2 cubic feet</th><td>16</td></tr>
+          <tr><th scope="row">2.5 cubic feet</th><td>13</td></tr>
+        </tbody>
+      </table>
+      <h3>A common mix split</h3>
+      <p class="muted">A common rule of thumb is 60% topsoil, 30% compost, and 10% aeration (perlite, pumice, or coarse bark). It is a starting point, not a required recipe.</p>
+      <table>
+        <thead>
+          <tr><th>Part</th><th>Cubic feet</th><th>Cubic yards</th></tr>
+        </thead>
+        <tbody id="mixRows">
+          <tr><th scope="row">Topsoil (60%)</th><td>19.2</td><td>0.71</td></tr>
+          <tr><th scope="row">Compost (30%)</th><td>9.6</td><td>0.36</td></tr>
+          <tr><th scope="row">Aeration (10%)</th><td>3.2</td><td>0.12</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section class="prose">
+      <h2>How much soil a raised bed holds</h2>
+      <p>A 4 × 8 foot bed filled 12 inches deep holds 32 cubic feet of soil, or about 1.19 cubic yards. That is 32 bags of 1 cubic foot, 22 bags of 1.5 cubic feet, 16 bags of 2 cubic feet, or 13 bags of 2.5 cubic feet, with the last two counts rounded up.</p>
+      <p>Measure the inside of the box, not the outside of the boards, and use the depth you will actually fill. Iowa State University Extension says to multiply the width, length, and height of the side walls. Keep the units the same, then convert to cubic feet if you measured in inches (divide cubic inches by 1,728). Bulk soil is sold by the cubic yard, and one cubic yard is 27 cubic feet.</p>
+      <p>Iowa State notes that bagged soil is typically sold in 1, 1.25, or 1.5 cubic foot bags; 2 and 2.5 cubic foot bags are also common. Divide the volume by the bag size and round up so you do not come up short. University of Minnesota Extension says buying in bulk by the cubic yard is generally much cheaper than buying individual bags, which matters once you get near a cubic yard or more.</p>
+      <p>For the mix itself, University of Minnesota Extension describes an ideal raised-bed mixture as around one-half to two-thirds topsoil and one-third to one-half plant-based compost, and says potting soil is a poor fit for a raised bed because it dries out too quickly. Iowa State University Extension describes an excellent mix as equal parts topsoil, organic matter (well-rotted manure, compost, or peat), and coarse sand, or about 70% topsoil and 30% compost. The 60 / 30 / 10 split in the calculator is only a common rule of thumb for a topsoil, compost, and aeration blend.</p>
+      <p>If you already know the bed size, you can <a href="../plan.html">lay out the plants in the planner</a>. There is also a short guide on <a href="../guides/raised-bed.html">how to plan a raised bed</a>.</p>
+      <p class="muted source">Sources: Iowa State University Extension, <a href="https://yardandgarden.extension.iastate.edu/faq/how-do-i-determine-amount-soil-needed-fill-container-or-raised-bed">“How do I determine the amount of soil needed to fill a container or raised bed?”</a> and <a href="https://yardandgarden.extension.iastate.edu/faq/what-would-be-good-soil-mix-raised-bed">“What would be a good soil mix for a raised bed?”</a>; University of Minnesota Extension, <a href="https://extension.umn.edu/planting-and-growing-guides/raised-bed-gardens">“Raised bed gardens.”</a> More detail is in <a href="../SOURCES.md">SOURCES.md</a>.</p>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <div class="footer-brand"><strong>Bloom &amp; Bed Garden</strong><span>A free garden bed planner, with planting dates from extension guides and NOAA normals.</span></div>
+    <nav class="nav" aria-label="Footer">
+      <a href="../zones/">Zones</a>
+      <a href="../plants/">Plants</a>
+      <a href="../about.html">About</a>
+      <a href="../plus.html">Plus</a>
+      <a href="../privacy.html">Privacy</a>
+      <a href="../terms.html">Terms</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+  </footer>
+  <script src="../js/soil.js"></script>
+  <script>
+    (function () {
+      var soil = window.YardSoil;
+      var bedsEl = document.getElementById('beds');
+      var addBtn = document.getElementById('addBed');
+      var id = 0;
+      var beds = [];
+
+      function unitSelect(name, selected) {
+        return '<select name="' + name + '" aria-label="Unit">' +
+          '<option value="ft"' + (selected === 'ft' ? ' selected' : '') + '>feet</option>' +
+          '<option value="in"' + (selected === 'in' ? ' selected' : '') + '>inches</option>' +
+          '</select>';
+      }
+
+      function field(label, name, value, unit, unitSelected) {
+        var unitHtml = unit ? ' ' + unitSelect(unit, unitSelected) : '';
+        return '<label>' + label + ' <span class="soil-field"><input type="number" name="' + name + '" min="0" step="any" inputmode="decimal" value="' + value + '">' + unitHtml + '</span></label>';
+      }
+
+      function renderBed(bed) {
+        var el = document.createElement('div');
+        el.className = 'soil-bed';
+        el.dataset.id = String(bed.id);
+        var isRound = bed.shape === 'round';
+        el.innerHTML =
+          '<div class="row">' +
+            '<label>Shape <select name="shape">' +
+              '<option value="rect"' + (isRound ? '' : ' selected') + '>Rectangle</option>' +
+              '<option value="round"' + (isRound ? ' selected' : '') + '>Round</option>' +
+            '</select></label>' +
+            (isRound
+              ? field('Diameter', 'diameter', bed.diameter, 'diameterUnit', bed.diameterUnit)
+              : field('Length', 'length', bed.length, 'lengthUnit', bed.lengthUnit) +
+                field('Width', 'width', bed.width, 'widthUnit', bed.widthUnit)) +
+            field('Depth', 'depth', bed.depth, 'depthUnit', bed.depthUnit) +
+            field('Beds of this size', 'count', bed.count) +
+          '</div>' +
+          '<p class="soil-bed-remove"><button type="button" class="btn secondary" data-remove>Remove this size</button></p>';
+        return el;
+      }
+
+      function readBeds() {
+        return beds.map(function (bed) {
+          var box = bedsEl.querySelector('[data-id="' + bed.id + '"]');
+          if (!box) return bed;
+          function val(name, fallback) {
+            var input = box.querySelector('[name="' + name + '"]');
+            if (!input) return fallback;
+            return input.value;
+          }
+          return {
+            id: bed.id,
+            shape: val('shape', bed.shape) || 'rect',
+            length: val('length', bed.length),
+            lengthUnit: val('lengthUnit', bed.lengthUnit) || 'ft',
+            width: val('width', bed.width),
+            widthUnit: val('widthUnit', bed.widthUnit) || 'ft',
+            diameter: val('diameter', bed.diameter),
+            diameterUnit: val('diameterUnit', bed.diameterUnit) || 'ft',
+            depth: val('depth', bed.depth),
+            depthUnit: val('depthUnit', bed.depthUnit) || 'in',
+            count: val('count', bed.count)
+          };
+        });
+      }
+
+      function redraw() {
+        bedsEl.innerHTML = '';
+        beds.forEach(function (bed) { bedsEl.appendChild(renderBed(bed)); });
+        var removeBtns = bedsEl.querySelectorAll('[data-remove]');
+        for (var i = 0; i < removeBtns.length; i++) {
+          removeBtns[i].hidden = beds.length === 1;
+        }
+        update();
+      }
+
+      function describe(list) {
+        function dim(value, unit) {
+          var n = soil.formatVolume(value);
+          if (!n) return '';
+          return n + (unit === 'in' ? ' in' : ' ft');
+        }
+        var parts = list.map(function (bed) {
+          var count = Number(bed.count);
+          var countText = (count === 1 || !isFinite(count)) ? '1' : soil.formatVolume(count);
+          var size;
+          if (bed.shape === 'round') size = dim(bed.diameter, bed.diameterUnit) + ' across, ' + dim(bed.depth, bed.depthUnit) + ' deep';
+          else size = dim(bed.length, bed.lengthUnit) + ' × ' + dim(bed.width, bed.widthUnit) + ', ' + dim(bed.depth, bed.depthUnit) + ' deep';
+          var noun = count === 1 ? 'bed' : 'beds';
+          return countText + ' ' + (bed.shape === 'round' ? 'round ' : '') + noun + ', ' + size;
+        });
+        if (parts.length === 1) return 'For ' + parts[0] + '.';
+        return 'For ' + parts.join('; ') + '.';
+      }
+
+      function update() {
+        beds = readBeds();
+        var result = soil.calculate(beds);
+        var totalFt = document.getElementById('totalFt');
+        var totalYd = document.getElementById('totalYd');
+        var note = document.getElementById('resultNote');
+        var bagRows = document.getElementById('bagRows');
+        var mixRows = document.getElementById('mixRows');
+        if (!result) {
+          totalFt.textContent = 'Enter the bed size';
+          totalYd.textContent = '';
+          note.textContent = 'Use numbers greater than zero for each measurement and for the number of beds.';
+          bagRows.innerHTML = '';
+          mixRows.innerHTML = '';
+          return;
+        }
+        totalFt.textContent = soil.formatVolume(result.cubicFeet) + ' cubic feet';
+        totalYd.textContent = soil.formatVolume(result.cubicYards) + ' cubic yards';
+        note.textContent = describe(beds);
+        bagRows.innerHTML = soil.BAG_SIZES.map(function (size) {
+          var label = size === 1 ? '1 cubic foot' : size + ' cubic feet';
+          return '<tr><th scope="row">' + label + '</th><td>' + result.bags[String(size)] + '</td></tr>';
+        }).join('');
+        mixRows.innerHTML =
+          '<tr><th scope="row">Topsoil (60%)</th><td>' + soil.formatVolume(result.mix.topsoil) + '</td><td>' + soil.formatVolume(result.mix.topsoil / 27) + '</td></tr>' +
+          '<tr><th scope="row">Compost (30%)</th><td>' + soil.formatVolume(result.mix.compost) + '</td><td>' + soil.formatVolume(result.mix.compost / 27) + '</td></tr>' +
+          '<tr><th scope="row">Aeration (10%)</th><td>' + soil.formatVolume(result.mix.aeration) + '</td><td>' + soil.formatVolume(result.mix.aeration / 27) + '</td></tr>';
+      }
+
+      function addBed(preset) {
+        id += 1;
+        beds.push({
+          id: id,
+          shape: (preset && preset.shape) || 'rect',
+          length: (preset && preset.length) || '8',
+          lengthUnit: (preset && preset.lengthUnit) || 'ft',
+          width: (preset && preset.width) || '4',
+          widthUnit: (preset && preset.widthUnit) || 'ft',
+          diameter: (preset && preset.diameter) || '4',
+          diameterUnit: (preset && preset.diameterUnit) || 'ft',
+          depth: (preset && preset.depth) || '12',
+          depthUnit: (preset && preset.depthUnit) || 'in',
+          count: (preset && preset.count) || '1'
+        });
+        redraw();
+      }
+
+      bedsEl.addEventListener('input', update);
+      bedsEl.addEventListener('change', function (e) {
+        if (e.target && e.target.name === 'shape') {
+          beds = readBeds();
+          redraw();
+        } else {
+          update();
+        }
+      });
+      bedsEl.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-remove]');
+        if (!btn) return;
+        var box = btn.closest('.soil-bed');
+        var removeId = Number(box && box.dataset.id);
+        if (!removeId || beds.length === 1) return;
+        beds = readBeds().filter(function (bed) { return bed.id !== removeId; });
+        redraw();
+      });
+      addBtn.addEventListener('click', function () { addBed(); });
+
+      addBed({ length: '8', width: '4', depth: '12', count: '1' });
+    })();
+  </script>
+  <script src="../js/account.js"></script>
+</body>
+</html>

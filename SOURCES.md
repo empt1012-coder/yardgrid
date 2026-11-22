@@ -30,7 +30,15 @@ Checked 18 November 2026. Plant numbers in the planner come from these pages. If
 
 - University of Minnesota Extension. “Raised bed gardens.”
   https://extension.umn.edu/planting-and-growing-guides/raised-bed-gardens
-  Why a raised bed, 6–8 hours of sun for tomatoes, peppers, and eggplants, and the short list of crops that can take less light.
+  Why a raised bed, 6–8 hours of sun for tomatoes, peppers, and eggplants, and the short list of crops that can take less light. Ideal raised-bed mix of around one-half to two-thirds topsoil and one-third to one-half plant-based compost. Buying in bulk by the cubic yard is generally cheaper than bags. Potting soil dries out too quickly for a raised bed.
+
+- Iowa State University Extension. “How do I determine the amount of soil needed to fill a container or raised bed?”
+  https://yardandgarden.extension.iastate.edu/faq/how-do-i-determine-amount-soil-needed-fill-container-or-raised-bed
+  Raised-bed volume is width × length × height. Bagged soil is typically 1, 1.25, or 1.5 cubic feet. One cubic yard is 27 cubic feet.
+
+- Iowa State University Extension. “What would be a good soil mix for a raised bed?”
+  https://yardandgarden.extension.iastate.edu/faq/what-would-be-good-soil-mix-raised-bed
+  An excellent mix is equal parts topsoil, organic matter (well-rotted manure, compost, or peat), and coarse sand, or about 70% topsoil and 30% compost.
 
 - University of Minnesota Extension. “Growing tomatoes in home gardens.”
   https://extension.umn.edu/vegetables/growing-tomatoes
