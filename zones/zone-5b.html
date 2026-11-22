@@ -14,8 +14,8 @@
 </head>
 <body>
   <header class="site-header">
-    <a class="logo" href="/index.html"><img src="/images/logo.svg" alt="Bloom &amp; Bed Garden"></a>
-    <nav class="nav">
+    <a class="logo" href="/index.html"><img src="/images/favicon.svg" alt="" width="32" height="32"><span>Bloom &amp; Bed Garden</span></a>
+    <nav class="nav" aria-label="Main">
       <a href="/index.html">Home</a>
       <a href="/plan.html">Planner</a>
       <a href="/gallery.html">Gallery</a>
@@ -34,6 +34,14 @@
       <button type="submit" class="btn">Dates for my ZIP</button>
     </form>
     <h2>Zone 5b frost dates</h2>
+    <figure class="season">
+      <figcaption>Zone 5b frost-free stretch, from the median dates</figcaption>
+      <div class="season-chart" role="img" aria-label="Zone 5b: median last 32°F May 5, median first 32°F Oct 7, about 155 days between.">
+        <div class="cal-months" aria-hidden="true"><span style="left:0.00%;width:8.49%"><b class="m-long">Jan</b><b class="m-short" aria-hidden="true">J</b></span><span style="left:8.49%;width:7.67%"><b class="m-long">Feb</b><b class="m-short" aria-hidden="true">F</b></span><span style="left:16.16%;width:8.49%"><b class="m-long">Mar</b><b class="m-short" aria-hidden="true">M</b></span><span style="left:24.66%;width:8.22%"><b class="m-long">Apr</b><b class="m-short" aria-hidden="true">A</b></span><span style="left:32.88%;width:8.49%"><b class="m-long">May</b><b class="m-short" aria-hidden="true">M</b></span><span style="left:41.37%;width:8.22%"><b class="m-long">Jun</b><b class="m-short" aria-hidden="true">J</b></span><span style="left:49.59%;width:8.49%"><b class="m-long">Jul</b><b class="m-short" aria-hidden="true">J</b></span><span style="left:58.08%;width:8.49%"><b class="m-long">Aug</b><b class="m-short" aria-hidden="true">A</b></span><span style="left:66.58%;width:8.22%"><b class="m-long">Sep</b><b class="m-short" aria-hidden="true">S</b></span><span style="left:74.79%;width:8.49%"><b class="m-long">Oct</b><b class="m-short" aria-hidden="true">O</b></span><span style="left:83.29%;width:8.22%"><b class="m-long">Nov</b><b class="m-short" aria-hidden="true">N</b></span><span style="left:91.51%;width:8.49%"><b class="m-long">Dec</b><b class="m-short" aria-hidden="true">D</b></span></div>
+        <div class="season-track"><i class="cal-band" style="left:0.00%;width:8.49%"></i><i class="cal-band alt" style="left:8.49%;width:7.67%"></i><i class="cal-band" style="left:16.16%;width:8.49%"></i><i class="cal-band alt" style="left:24.66%;width:8.22%"></i><i class="cal-band" style="left:32.88%;width:8.49%"></i><i class="cal-band alt" style="left:41.37%;width:8.22%"></i><i class="cal-band" style="left:49.59%;width:8.49%"></i><i class="cal-band alt" style="left:58.08%;width:8.49%"></i><i class="cal-band" style="left:66.58%;width:8.22%"></i><i class="cal-band alt" style="left:74.79%;width:8.49%"></i><i class="cal-band" style="left:83.29%;width:8.22%"></i><i class="cal-band alt" style="left:91.51%;width:8.49%"></i><i class="season-range" style="left:32.05%;width:4.66%"></i><i class="season-range" style="left:74.79%;width:3.29%"></i><i class="season-band" style="left:33.97%;width:42.47%"></i><b class="season-tag" style="left:33.97%">May 5</b><b class="season-tag end" style="left:76.44%">Oct 7</b></div>
+      </div>
+      <p class="cal-legend"><span class="key"><i class="swatch band"></i>Between the median frosts, about 155 days</span><span class="key"><i class="swatch range"></i>Middle half of stations</span></p>
+    </figure>
     <table>
       <thead><tr><th></th><th>Median</th><th>Middle half of stations</th></tr></thead>
       <tbody>
@@ -86,8 +94,8 @@
     <p class="muted source">Sources: Frost dates: <a href="https://www.ncei.noaa.gov/products/land-based-station/us-climate-normals">NOAA NCEI U.S. Climate Normals 1991–2020</a>, last spring and first fall 32°F dates at 50% probability. Zones: <a href="https://prism.oregonstate.edu/phzm">2023 USDA Plant Hardiness Zone Map ZIP listings</a> (PRISM Group, Oregon State University). Planting windows: the extension guides in <a href="/SOURCES.md">SOURCES.md</a>. Updated 2026-11-21.</p>
   </main>
   <footer class="site-footer">
-    <span>Bloom &amp; Bed Garden</span>
-    <nav class="nav">
+    <div class="footer-brand"><strong>Bloom &amp; Bed Garden</strong><span>A free garden bed planner, with planting dates from extension guides and NOAA normals.</span></div>
+    <nav class="nav" aria-label="Footer">
       <a href="/zones/">Zones</a>
       <a href="/plants/">Plants</a>
       <a href="/about.html">About</a>

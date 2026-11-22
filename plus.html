@@ -14,32 +14,42 @@
 </head>
 <body>
   <header class="site-header">
-    <a class="logo" href="index.html"><img src="images/logo.svg" alt="Bloom &amp; Bed Garden"></a>
-    <nav class="nav">
+    <a class="logo" href="index.html"><img src="images/favicon.svg" alt="" width="32" height="32"><span>Bloom &amp; Bed Garden</span></a>
+    <nav class="nav" aria-label="Main">
       <a href="index.html">Home</a>
       <a href="plan.html">Planner</a>
       <a href="gallery.html">Gallery</a>
       <a href="charts/planting-calendar.html">Charts</a>
+      <a href="guides/raised-bed.html">Guides</a>
       <a href="about.html">About</a>
     </nav>
   </header>
-  <main class="wrap prose">
+  <main class="wrap plus-page">
     <h1>Bloom &amp; Bed Plus</h1>
     <p class="lede">Every tool stays free. Plus is only for saving more than one plan to an account.</p>
-    <p class="price">$5 a month, or $30 a year.</p>
-    <p>Free, with no account: Grid plan, Placement mode, the plant library, the charts, Save image, and Print. This browser keeps one garden plan and one arrangement. You can still export and import a JSON file.</p>
-    <p>Plus adds email sign-in, unlimited saved grids and arrangements, opening them on another device, and a view-only share link. Pictures you uploaded are stored with the garden after they are shrunk. Each account can store 200 MB.</p>
-    <p>You can cancel anytime from the subscription page Stripe hosts. If Plus ends, saved gardens stay. They can be opened and exported. They are not deleted. New cloud saves wait until Plus is on again.</p>
-    <p>Payments are taken by Stripe.</p>
-    <div id="plusBuy">
-      <p class="row plus-actions">
-        <button type="button" class="btn" id="plusMonthly">Get Plus, $5 a month</button>
-        <button type="button" class="btn secondary" id="plusYearly">Get Plus, $30 a year</button>
-      </p>
+    <div class="plan-compare">
+      <article class="card plan-card">
+        <h2>Free</h2>
+        <p class="price">No account needed</p>
+        <p>Free, with no account: Grid plan, Placement mode, the plant library, the charts, Save image, and Print. This browser keeps one garden plan and one arrangement. You can still export and import a JSON file.</p>
+      </article>
+      <article class="card plan-card plan-plus">
+        <h2>Plus</h2>
+        <p class="price">$5 a month, or $30 a year.</p>
+        <p>Plus adds email sign-in, unlimited saved grids and arrangements, opening them on another device, and a view-only share link. Pictures you uploaded are stored with the garden after they are shrunk. Each account can store 200 MB.</p>
+        <div id="plusBuy">
+          <p class="row plus-actions">
+            <button type="button" class="btn" id="plusMonthly">Get Plus, $5 a month</button>
+            <button type="button" class="btn secondary" id="plusYearly">Get Plus, $30 a year</button>
+          </p>
+        </div>
+        <p id="plusManage" hidden>
+          <button type="button" class="btn" id="plusPortal">Manage subscription</button>
+        </p>
+      </article>
     </div>
-    <p id="plusManage" hidden>
-      <button type="button" class="btn" id="plusPortal">Manage subscription</button>
-    </p>
+    <p>You can cancel anytime from the subscription page Stripe hosts. If Plus ends, saved gardens stay. They can be opened and exported. They are not deleted. New cloud saves wait until Plus is on again.</p>
+    <p class="muted">Payments are taken by Stripe.</p>
     <p class="muted" id="accountStatus"></p>
     <div id="accountSignedOut" hidden>
       <form id="accountForm">
@@ -52,12 +62,12 @@
     <p class="muted"><a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a></p>
   </main>
   <footer class="site-footer">
-    <span>Bloom &amp; Bed Garden</span>
-    <nav class="nav">
+    <div class="footer-brand"><strong>Bloom &amp; Bed Garden</strong><span>A free garden bed planner, with planting dates from extension guides and NOAA normals.</span></div>
+    <nav class="nav" aria-label="Footer">
       <a href="zones/">Zones</a>
       <a href="plants/">Plants</a>
       <a href="about.html">About</a>
-      <a href="plus.html">Plus</a>
+      <a href="plus.html" aria-current="page">Plus</a>
       <a href="privacy.html">Privacy</a>
       <a href="terms.html">Terms</a>
       <a href="contact.html">Contact</a>

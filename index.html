@@ -14,9 +14,9 @@
 </head>
 <body class="home">
   <header class="site-header">
-    <a class="logo" href="index.html"><img src="images/logo.svg" alt="Bloom &amp; Bed Garden"></a>
-    <nav class="nav">
-      <a href="index.html">Home</a>
+    <a class="logo" href="index.html"><img src="images/favicon.svg" alt="" width="32" height="32"><span>Bloom &amp; Bed Garden</span></a>
+    <nav class="nav" aria-label="Main">
+      <a href="index.html" aria-current="page">Home</a>
       <a href="plan.html">Planner</a>
       <a href="gallery.html">Gallery</a>
       <a href="charts/planting-calendar.html">Charts</a>
@@ -25,30 +25,41 @@
     </nav>
   </header>
   <main class="wrap">
-    <section class="hero">
-      <h1>Plan your beds. Arrange the plants.</h1>
-      <p class="lede">Plan your garden beds and arrange flowers and plants, right on a photo of your space.</p>
-      <p class="sell">Plan right on a photo of your own yard.</p>
-      <p class="sell">See how it'll look: place your own plant photos on your yard.</p>
-      <p class="sell">Arrange flowers and plants with a built-in photo library, or use your own pictures.</p>
-      <a class="btn" href="plan.html">Start planning</a>
+    <section class="hero home-hero">
+      <div class="hero-text">
+        <p class="eyebrow">Free garden planner</p>
+        <h1>Plan your beds. Arrange the plants.</h1>
+        <p class="lede">Plan your garden beds and arrange flowers and plants, right on a photo of your space.</p>
+        <ul class="checks">
+          <li>Plan right on a photo of your own yard.</li>
+          <li>See how it'll look: place your own plant photos on your yard.</li>
+          <li>Arrange flowers and plants with a built-in photo library, or use your own pictures.</li>
+        </ul>
+        <p class="actions"><a class="btn btn-lg" href="plan.html">Start planning</a> <a class="btn secondary btn-lg" href="plan.html?demo=1">See a sample bed</a></p>
+      </div>
+    </section>
+    <section class="section">
+      <h2 class="section-title">How it works</h2>
       <div class="steps">
-        <article class="card">
-          <h3>1. Add a bed</h3>
+        <article class="card step">
+          <span class="step-num" aria-hidden="true">1</span>
+          <h3>Add a bed</h3>
           <p>Pick the width and length in feet. Each square is one square foot.</p>
         </article>
-        <article class="card">
-          <h3>2. Place plants</h3>
+        <article class="card step">
+          <span class="step-num" aria-hidden="true">2</span>
+          <h3>Place plants</h3>
           <p>Drag a plant onto a square, or tap it and then tap the square. The square shows how many plants fit.</p>
         </article>
-        <article class="card">
-          <h3>3. Use your frost date</h3>
+        <article class="card step">
+          <span class="step-num" aria-hidden="true">3</span>
+          <h3>Use your frost date</h3>
           <p>Enter the average last spring frost. The calendar lists indoor, transplant, and direct-sow windows from extension guides.</p>
         </article>
       </div>
     </section>
-    <section class="gallery-home">
-      <h2>Browse example gardens</h2>
+    <section class="section gallery-home">
+      <h2 class="section-title">Browse example gardens</h2>
       <p class="muted">A few layouts to start from. Example gardens (generated images), not photos of real yards.</p>
       <div class="gallery-home-row">
         <a href="gallery.html"><img src="images/gallery/thumb/raised-beds.webp" alt="Two wooden raised beds of tomatoes, peppers, lettuce, and basil." width="600" height="400" loading="lazy"></a>
@@ -56,10 +67,12 @@
         <a href="gallery.html"><img src="images/gallery/thumb/shade-garden.webp" alt="A shade garden with hostas, Boston fern, and white hydrangeas." width="600" height="400" loading="lazy"></a>
         <a href="gallery.html"><img src="images/gallery/thumb/spring-tulips.webp" alt="Red and yellow tulips with purple iris in a spring front border." width="600" height="400" loading="lazy"></a>
       </div>
-      <a class="btn" href="gallery.html">See the gallery</a>
+      <a class="btn secondary" href="gallery.html">See the gallery</a>
     </section>
     <!-- ad slot: home, below the steps -->
-    <section class="guide-list">
+    <section class="section">
+      <h2 class="section-title">Guides and charts</h2>
+      <div class="guide-list">
       <a href="guides/raised-bed.html"><strong>How to plan a raised bed</strong><br><span class="muted">Width, light, and where to put it.</span></a>
       <a href="guides/frost-date.html"><strong>How to use your frost date</strong><br><span class="muted">What the average means, and when soil temperature matters more.</span></a>
       <a href="guides/spacing.html"><strong>Square-foot spacing</strong><br><span class="muted">How a 1-foot square becomes 16 carrots or 1 broccoli.</span></a>
@@ -71,11 +84,12 @@
       <a href="charts/monthly-tasks.html"><strong>Monthly garden to-do list</strong><br><span class="muted">Upper Midwest tasks from Minnesota Extension.</span></a>
       <a href="charts/companions.html"><strong>Companion planting chart</strong><br><span class="muted">Only the pairs the extension notes support.</span></a>
       <a href="charts/checklist.html"><strong>Printable seasonal checklist</strong><br><span class="muted">One page for a zone. No sign-up.</span></a>
+      </div>
     </section>
   </main>
   <footer class="site-footer">
-    <span>Bloom &amp; Bed Garden</span>
-    <nav class="nav">
+    <div class="footer-brand"><strong>Bloom &amp; Bed Garden</strong><span>A free garden bed planner, with planting dates from extension guides and NOAA normals.</span></div>
+    <nav class="nav" aria-label="Footer">
       <a href="zones/">Zones</a>
       <a href="plants/">Plants</a>
       <a href="about.html">About</a>

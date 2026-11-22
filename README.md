@@ -39,3 +39,7 @@ Cloud save is optional. The tools stay free. Sign-in is Netlify Identity. Garden
 Emilio decides on affiliate sign-ups and analytics. The live copy is https://bloomandbedgarden.com. The original Scene Board folder was only read.
 
 The source is at https://github.com/empt1012-coder/yardgrid.
+
+## Fonts
+
+Inter (text) and Fraunces (headings) are self-hosted in `fonts/` as variable WOFF2 files, Latin subset, from the Fontsource builds. Both are under the SIL Open Font License 1.1; the license texts are `fonts/OFL-Inter.txt` and `fonts/OFL-Fraunces.txt`. Nothing loads from a font CDN, so the `font-src 'self'` CSP holds.
