@@ -674,3 +674,10 @@ button.on { outline: 2px solid var(--green); outline-offset: -1px; background: v
 .week-block { margin: 28px 0; }
 .week-block h2 { margin: 0 0 12px; }
 .week-block table { margin: 0; }
+
+/* ---------- seasonal garden notes signup ---------- */
+.notes-signup { margin-top: 40px; max-width: 36rem; }
+.home .notes-signup { max-width: none; margin-top: 28px; }
+.notes-signup h2, .notes-signup .section-title { margin: 0 0 8px; }
+.notes-signup p { margin: 0 0 14px; max-width: 46ch; }
+.notes-signup p:last-child { margin-bottom: 0; }
