@@ -10,7 +10,7 @@ const root = path.join(__dirname, '..');
   assert.strictEqual(plants.length, 30, 'plant library stays at 30');
 
   const { pages, stats } = gen.buildAll();
-  assert.strictEqual(pages.length, 16 + 1 + 30 + 1, '16 zones, 30 plants, two indexes');
+  assert.strictEqual(pages.length, 20 + 1 + 30 + 1, '20 zones, 30 plants, two indexes');
 
   const sitemap = fs.readFileSync(path.join(root, 'sitemap.xml'), 'utf8');
   pages.forEach(function (pg) {
@@ -65,5 +65,22 @@ const root = path.join(__dirname, '..');
   ['index.html', 'charts/planting-calendar.html', 'guides/frost-date.html'].forEach(function (f) {
     assert.ok(fs.readFileSync(path.join(root, f), 'utf8').includes('zones/"'), f + ' links to /zones/');
   });
+
+  gen.SKIPPED_ZONES.forEach(function (z) {
+    assert.ok(!fs.existsSync(path.join(root, 'zones/zone-' + z + '.html')), 'no page for skipped zone ' + z);
+  });
+  const z1 = stats.find(function (s) { return s.zone === '1a'; });
+  assert.ok(z1 && z1.n > 0 && z1.region === 'alaska', 'zone 1a uses Alaska stations');
+  plants.forEach(function (p) {
+    const html = fs.readFileSync(path.join(root, 'plants/' + p.id + '.html'), 'utf8');
+    const desc = (html.match(/<meta name="description" content="([^"]+)">/) || [])[1] || '';
+    assert.ok(desc.length <= 155, p.id + ' meta is ' + desc.length + ' characters');
+  });
+  pages.forEach(function (pg) {
+    const html = fs.readFileSync(path.join(root, pg.file), 'utf8');
+    assert.ok(html.includes('aria-label="Free garden tools"'), pg.file + ' has the tools block');
+    assert.ok(html.includes('/tools/frost-dates.html') && html.includes('/charts/square-foot-spacing.html'), pg.file + ' tools block links');
+  });
+
   console.log('pages tests passed', pages.length, 'pages');
 })().catch(function (e) { console.error(e); process.exit(1); });

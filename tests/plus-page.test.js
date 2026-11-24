@@ -56,3 +56,14 @@ pages.forEach(function (file) {
 });
 
 console.log('plus page markers ok');
+
+const planHtml = fs.readFileSync(path.join(__dirname, '..', 'plan.html'), 'utf8');
+assert.ok(planHtml.includes('id="keepGarden"') && planHtml.includes('Your garden is saved in this browser.'), 'keep panel copy');
+assert.ok(planHtml.includes('id="keepSave"') && planHtml.includes('id="keepImage"') && planHtml.includes('id="keepPrint"'), 'keep panel actions');
+assert.ok(planHtml.includes('Want it on your phone too, or a link to share?') && planHtml.includes('href="plus.html"'), 'plus offer stays in the keep panel');
+assert.ok(planHtml.includes('$5/month or $30/year'), 'plus price in the keep panel');
+assert.ok(planHtml.includes('id="openSavedBox"') && planHtml.includes('Open a saved garden'), 'open-saved control');
+assert.ok(planHtml.includes('id="saveBtn"') && planHtml.includes('id="exportBtn"') && planHtml.includes('id="printBtn"') && planHtml.includes('id="importFile"'), 'free save, export, print, and import stay');
+assert.ok(!/disabled.*saveBtn|saveBtn[^>]*disabled/.test(planHtml), 'Save is not disabled in markup');
+const account = fs.readFileSync(path.join(__dirname, '..', 'js/account.js'), 'utf8');
+assert.ok(account.includes("$('plusPortal').hidden = !isPlus"), 'Manage subscription hides unless Plus is on');

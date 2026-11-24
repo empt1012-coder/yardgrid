@@ -23,7 +23,11 @@ assert.ok(/body\.home \{ background: [^;]*home-garden-sm\.webp/.test(css) && css
 function pages(dir) {
   return fs.readdirSync(path.join(root, dir)).filter(function (f) { return f.endsWith('.html'); }).map(function (f) { return path.join(dir, f); });
 }
-const all = pages('.').concat(pages('guides'), pages('charts'), pages('zones'), pages('plants'), pages('tools'));
+function pagesMaybe(dir) {
+  const full = path.join(root, dir);
+  return fs.existsSync(full) ? pages(dir) : [];
+}
+const all = pages('.').concat(pages('guides'), pages('charts'), pagesMaybe('charts/monthly'), pages('zones'), pages('plants'), pages('tools'));
 all.forEach(function (rel) {
   const s = fs.readFileSync(path.join(root, rel), 'utf8');
   assert.ok(/<link rel="stylesheet" href="[./]*\/?css\/site\.css">/.test(s), rel + ' loads site.css');

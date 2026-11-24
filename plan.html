@@ -158,6 +158,10 @@
       <div id="panel-list" class="panel">
         <div id="shop"></div>
       </div>
+      <div id="openSavedBox" class="open-saved" hidden>
+        <p>You have a garden saved in this browser.</p>
+        <button type="button" id="openSavedBtn">Open a saved garden</button>
+      </div>
       <h2 style="margin-top:14px">Save</h2>
       <div class="row">
         <button type="button" class="primary" id="saveBtn">Save</button>
@@ -166,6 +170,15 @@
         <button type="button" id="printBtn">Print</button>
       </div>
       <p class="muted">This browser keeps one garden plan and one arrangement.</p>
+      <div id="keepGarden" class="keep-garden" hidden>
+        <p>Your garden is saved in this browser.</p>
+        <div class="row">
+          <button type="button" class="primary" id="keepSave">Save</button>
+          <button type="button" id="keepImage">Download image</button>
+          <button type="button" id="keepPrint">Print</button>
+        </div>
+        <p class="muted">Want it on your phone too, or a link to share? <a href="plus.html">Bloom &amp; Bed Plus</a> keeps it in your account, $5/month or $30/year.</p>
+      </div>
       <label style="margin-top:8px">Saved in this browser
         <select id="saveList"></select>
       </label>

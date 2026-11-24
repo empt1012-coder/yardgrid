@@ -77,6 +77,10 @@ import(path.join(root, 'scripts/build-pages.mjs')).then(function (gen) {
   gen.ZONES.forEach(function (z) {
     const s = gen.zoneStats(data, z);
     const m = charts.zoneMedian(lookup, z);
+    if (!m) {
+      assert.ok(s.n > 0 && s.region === 'alaska', z + ' uses Alaska stations on the zone page');
+      return;
+    }
     assert.strictEqual(m.n, s.n, z + ' station count');
     assert.strictEqual(m.last, s.last.mmdd, z + ' last frost');
     assert.strictEqual(m.first, s.first.mmdd, z + ' first frost');

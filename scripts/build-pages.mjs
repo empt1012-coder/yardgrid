@@ -13,10 +13,14 @@ import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = 'https://bloomandbedgarden.com';
-const UPDATED = '2026-11-21';
+const UPDATED = '2026-11-23';
 /* The planner link needs a full date. Use the coming spring. Text on the pages has no year. */
 const YEAR = 2027;
-export const ZONES = ['3a', '3b', '4a', '4b', '5a', '5b', '6a', '6b', '7a', '7b', '8a', '8b', '9a', '9b', '10a', '10b'];
+export const ZONES = ['1a', '1b', '2a', '2b', '3a', '3b', '4a', '4b', '5a', '5b', '6a', '6b', '7a', '7b', '8a', '8b', '9a', '9b', '10a', '10b'];
+/* 11a–13b have ZIP listings, but the zone-page method needs a station median.
+   11a has no contiguous-US station labeled 11a (only one Hawaii mountain station),
+   and 11b–13b have no usable station set. Those pages are skipped. */
+export const SKIPPED_ZONES = ['11a', '11b', '12a', '12b', '13a', '13b'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const STATES = {
@@ -29,6 +33,7 @@ const STATES = {
   TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia', WA: 'Washington', WV: 'West Virginia',
   WI: 'Wisconsin', WY: 'Wyoming'
 };
+const STATE_NAMES = { ...STATES, AK: 'Alaska' };
 
 /* Titles and links copied from SOURCES.md. */
 const SRC = {
@@ -93,27 +98,52 @@ function dayLabel(n) {
   return { text: MONTHS[d.getMonth()] + ' ' + d.getDate(), tag: tag, mmdd: String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') };
 }
 
-export function zoneStats(data, zone) {
-  const { lookup, charts } = data;
+function stationRegion(name) {
+  const st = stateOf(name);
+  if (STATES[st]) return 'contiguous';
+  if (st === 'AK') return 'alaska';
+  return '';
+}
+function zipInRegion(zip, region) {
+  const p = Number(zip.slice(0, 3));
+  if (region === 'alaska') return p >= 995 && p <= 999;
+  return contiguousZip(zip);
+}
+function collectStations(lookup, charts, zone, region) {
   const lasts = [], firsts = [], states = {};
   Object.keys(lookup.stations).forEach((id) => {
     const row = lookup.stations[id];
     if (row[3] !== zone) return;
-    const st = stateOf(row[0]);
-    if (!STATES[st]) return; /* contiguous 48 states and DC only */
+    if (stationRegion(row[0]) !== region) return;
     const a = lastDay(charts, row[1]), b = firstDay(charts, row[2]);
     if (a == null || b == null) return;
     lasts.push(a); firsts.push(b);
+    const st = stateOf(row[0]);
     states[st] = (states[st] || 0) + 1;
   });
+  return { lasts, firsts, states };
+}
+
+export function zoneStats(data, zone) {
+  const { lookup, charts } = data;
+  let region = 'contiguous';
+  let { lasts, firsts, states } = collectStations(lookup, charts, zone, 'contiguous');
+  /* Zones 1 and 2 exist only in Alaska. Use those stations; do not mix Alaska into lower-48 zones. */
+  if (!lasts.length) {
+    const ak = collectStations(lookup, charts, zone, 'alaska');
+    if (ak.lasts.length) {
+      region = 'alaska';
+      lasts = ak.lasts; firsts = ak.firsts; states = ak.states;
+    }
+  }
   let zips = 0, zipsWithFrost = 0;
   Object.keys(lookup.zips).forEach((zip) => {
     const row = lookup.zips[zip];
-    if (row[0] !== zone || !contiguousZip(zip)) return;
+    if (row[0] !== zone || !zipInRegion(zip, region)) return;
     zips++;
     if (row.length >= 5) zipsWithFrost++;
   });
-  if (!lasts.length) return { zone, n: 0, zips, zipsWithFrost };
+  if (!lasts.length) return { zone, n: 0, zips, zipsWithFrost, region };
   lasts.sort((x, y) => x - y); firsts.sort((x, y) => x - y);
   const mLast = median(lasts), mFirst = median(firsts);
   const topStates = Object.keys(states).sort((x, y) => states[y] - states[x] || x.localeCompare(y));
@@ -130,7 +160,8 @@ export function zoneStats(data, zone) {
       lastLo: quantile(lasts, lasts.length < 10 ? 0 : 0.25), lastHi: quantile(lasts, lasts.length < 10 ? 1 : 0.75),
       firstLo: quantile(firsts, firsts.length < 10 ? 0 : 0.25), firstHi: quantile(firsts, firsts.length < 10 ? 1 : 0.75)
     },
-    states: topStates.map((s) => ({ code: s, name: STATES[s], n: states[s] }))
+    region,
+    states: topStates.map((st) => ({ code: st, name: STATE_NAMES[st] || st, n: states[st] }))
   };
 }
 
@@ -239,6 +270,21 @@ ${rows}
     </figure>`;
 }
 
+function toolsBlock() {
+  return `    <nav class="tool-links" aria-label="Free garden tools">
+      <h2>Free garden tools</h2>
+      <ul>
+        <li><a href="/charts/what-to-plant.html">What to plant this week</a></li>
+        <li><a href="/tools/frost-dates.html">Frost dates by ZIP code</a></li>
+        <li><a href="/tools/soil-calculator.html">Soil calculator</a></li>
+        <li><a href="/charts/square-foot-spacing.html">Square-foot spacing</a></li>
+        <li><a href="/charts/companions.html">Companions</a></li>
+        <li><a href="/charts/monthly-tasks.html">Monthly to-dos</a></li>
+        <li><a href="/plan.html">Planner</a></li>
+      </ul>
+    </nav>`;
+}
+
 /* ---------- page shell, matching the existing pages ---------- */
 function shell({ urlPath, title, description, body, jsonld, nav }) {
   return `<!DOCTYPE html>
@@ -268,6 +314,7 @@ ${jsonld ? '  <script type="application/ld+json">' + JSON.stringify(jsonld).repl
   </header>
   <main class="wrap prose">
 ${body}
+${toolsBlock()}
   </main>
   <footer class="site-footer">
     <div class="footer-brand"><strong>Bloom &amp; Bed Garden</strong><span>A free garden bed planner, with planting dates from extension guides and NOAA normals.</span></div>
@@ -346,7 +393,7 @@ function zonePage(data, s, prev, next) {
   const body = `    <h1>${esc(title)}</h1>
     <p class="lede">Zone ${s.zone} median last frost: <strong>${s.last.text}</strong>${s.last.tag}. Median first frost: <strong>${s.first.text}</strong>${s.first.tag}.</p>
     <p>${esc(summary)}</p>
-    <p class="muted">A zone is a winter-low band from the USDA map, not a frost date. These medians are calculated here from NOAA station normals for stations matched to zone ${s.zone} in the contiguous United States. NOAA does not publish one frost date per zone. ${s.zipsWithFrost} of ${s.zips} zone ${s.zone} ZIP codes (${pct}%) have a NOAA station with both 32°F dates within 80 km. Your own ZIP gives a closer date:</p>
+    <p class="muted">A zone is a winter-low band from the USDA map, not a frost date. These medians are calculated here from NOAA station normals for stations matched to zone ${s.zone} in ${s.region === 'alaska' ? 'Alaska' : 'the contiguous United States'}. NOAA does not publish one frost date per zone. ${s.zipsWithFrost} of ${s.zips} zone ${s.zone} ZIP codes (${pct}%) have a NOAA station with both 32°F dates within 80 km. Your own ZIP gives a closer date:</p>
 ${zipBox()}
     <h2>Zone ${s.zone} frost dates</h2>
 ${seasonChart(s)}
@@ -376,7 +423,7 @@ ${rows}
 function zonesIndex(stats) {
   const urlPath = '/zones/';
   const title = 'Planting calendars and frost dates by USDA zone';
-  const description = 'Median last and first frost dates for USDA zones 3a to 10b from NOAA 1991–2020 station normals, with planting dates for 30 garden plants.';
+  const description = 'Median last and first frost dates for USDA zones 1a to 10b from NOAA 1991–2020 station normals, with planting dates for 30 garden plants.';
   const rows = stats.map((s) => `        <tr><td><a href="/zones/zone-${s.zone}.html">Zone ${s.zone}</a></td><td>${s.last.text}${s.last.tag ? '*' : ''}</td><td>${s.first.text}${s.first.tag ? '*' : ''}</td><td>${s.season}</td><td>${s.n}</td></tr>`).join('\n');
   const body = `    <h1>${esc(title)}</h1>
     <p class="lede">Pick your zone for its median frost dates and a planting table for 30 plants. If you know your ZIP code, that gives a closer date.</p>
@@ -388,11 +435,32 @@ ${seasonsChart(stats)}
 ${rows}
       </tbody>
     </table>
-    <p class="muted">* The first frost falls in the next winter. Medians are calculated here from NOAA station normals for contiguous-US stations matched to each 2023 USDA zone. A zone is a winter-low band, not a frost date.</p>
+    <p class="muted">* The first frost falls in the next winter. Medians are calculated here from NOAA station normals: contiguous-US stations for zones 3a to 10b, and Alaska stations for zones 1a to 2b, which have no contiguous-US stations. Zones 11a to 13b are omitted because that method does not give a usable zone-wide frost date. A zone is a winter-low band, not a frost date.</p>
     <p><a class="btn" href="/plan.html">Open the planner</a> <a class="btn secondary" href="/plants/">Plant pages</a></p>
     <p class="muted source">Sources: ${FROST_SOURCE} Updated ${UPDATED}.</p>`;
   return { path: urlPath, file: 'zones/index.html', html: shell({ urlPath, title, description, body, jsonld: article(urlPath, title, description) }) };
 }
+
+function plantDescription(p, daysWord) {
+  const shortRel = (pair, frost) => relText(pair, frost).replace(/the average /g, '');
+  const parts = [];
+  if (p.indoor) parts.push('start indoors ' + shortRel(p.indoor));
+  if (p.transplant) parts.push('set out ' + shortRel(p.transplant));
+  if (p.direct) parts.push('direct sow ' + shortRel(p.direct));
+  if (p.fallDirect) parts.push('plant cloves ' + shortRel(p.fallDirect, 'the first frost'));
+  const close = ' From extension guides.';
+  const head = p.name + ': ' + countText(p) + ', ' + daysWord + '.';
+  const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+  if (parts.length) {
+    const all = head + ' ' + cap(parts.join('; ')) + '.' + close;
+    if (all.length <= 155) return all;
+    const first = head + ' ' + cap(parts[0]) + '.' + close;
+    if (first.length <= 155) return first;
+  }
+  const bare = head + close;
+  return bare.length <= 155 ? bare : head;
+}
+export { plantDescription };
 
 /* ---------- plant page ---------- */
 function plantPage(data, p, stats) {
@@ -406,7 +474,7 @@ function plantPage(data, p, stats) {
   if (p.direct) timing.push('direct sow ' + relText(p.direct));
   if (p.fallDirect) timing.push('plant cloves ' + relText(p.fallDirect, 'the average first frost'));
   const daysWord = /^[\d–-]+$/.test(p.days) ? p.days + ' days' : p.days.replace(/^([\d–-]+) from /, '$1 days from ');
-  const description = p.name + ': ' + countText(p) + ' in a square-foot bed, ' + daysWord + (timing.length ? '; ' + timing.join('; ') : '') + '. Numbers from extension guides.';
+  const description = plantDescription(p, daysWord);
   const answer = `${p.name}: <strong>${esc(countText(p))}</strong>. Days to harvest: <strong>${esc(daysWord)}</strong>.` +
     (timing.length ? ' ' + esc(timing.join('; ').replace(/^./, (c) => c.toUpperCase())) + '.' : ' ' + esc(p.timingNote || 'The sources used here give no frost-offset date for this plant.'));
   const facts = [
