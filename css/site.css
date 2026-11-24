@@ -681,3 +681,28 @@ button.on { outline: 2px solid var(--green); outline-offset: -1px; background: v
 .notes-signup h2, .notes-signup .section-title { margin: 0 0 8px; }
 .notes-signup p { margin: 0 0 14px; max-width: 46ch; }
 .notes-signup p:last-child { margin-bottom: 0; }
+
+.frost-results { margin: 20px 0 28px; }
+.frost-results h2 { margin-top: 0; }
+.frost-stat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 18px;
+  margin: 0 0 10px;
+}
+.frost-stat .frost-label {
+  flex: 0 0 11rem;
+  color: var(--muted, #5a685f);
+  font-size: 0.95rem;
+}
+.frost-stat strong {
+  font-family: var(--font-serif);
+  font-size: clamp(1.35rem, 1.15rem + 0.8vw, 1.85rem);
+  font-weight: 600;
+  color: var(--green-dark);
+  line-height: 1.2;
+}
+.frost-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 0; }
+.frost-actions .btn { margin: 0; }
+

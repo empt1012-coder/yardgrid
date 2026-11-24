@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google-site-verification" content="5aUDvTAJZvLllM0J9P71zy-qEro_l_k9VWzHumEw2vs" />
+  <title>Frost dates by ZIP code · Bloom &amp; Bed Garden</title>
+  <meta name="description" content="Look up frost dates by ZIP code: the average last spring and first fall 32°F dates, plus growing-season length, from NOAA 1991–2020 normals.">
+  <link rel="icon" href="../images/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../css/site.css">
+  <link rel="canonical" href="https://bloomandbedgarden.com/tools/frost-dates.html">
+  <script src="../js/config.js"></script>
+  <script>yardMeta("/tools/frost-dates.html");</script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="logo" href="../index.html"><img src="../images/favicon.svg" alt="" width="32" height="32"><span>Bloom &amp; Bed Garden</span></a>
+    <nav class="nav" aria-label="Main">
+      <a href="../index.html">Home</a>
+      <a href="../plan.html">Planner</a>
+      <a href="../gallery.html">Gallery</a>
+      <a href="../charts/planting-calendar.html">Charts</a>
+      <a href="../guides/raised-bed.html">Guides</a>
+      <a href="../about.html">About</a>
+    </nav>
+  </header>
+  <main class="wrap">
+    <h1>Frost dates by ZIP code</h1>
+    <p class="lede">Enter a US ZIP code to see the average last spring and first fall 32°F dates, and how many days sit between them.</p>
+
+    <form class="row" id="frostForm">
+      <label>ZIP code <input id="zip" name="zip" inputmode="numeric" maxlength="5" placeholder="10001" required></label>
+      <button type="submit" class="btn" id="lookup">Look up ZIP</button>
+    </form>
+    <p id="status" class="note"></p>
+
+    <div class="card frost-results" id="results" hidden>
+      <h2>Average frost dates</h2>
+      <p class="frost-stat"><span class="frost-label">Last spring 32°F</span> <strong id="lastDate"></strong></p>
+      <p class="frost-stat"><span class="frost-label">First fall 32°F</span> <strong id="firstDate"></strong></p>
+      <p class="frost-stat"><span class="frost-label">Growing season</span> <strong id="seasonLen"></strong></p>
+      <p class="muted" id="placeNote"></p>
+      <p class="muted" id="caveat">These are NOAA 1991–2020 50% probability dates for 32°F. In about half of those years, the last spring 32°F reading came later than the spring date shown, or the first fall 32°F reading came earlier than the fall date. They are long-run averages, not a forecast for this year. Soil temperature is a better planting signal when you have it.</p>
+      <p class="frost-actions">
+        <a class="btn" id="weekLink" href="../charts/what-to-plant.html">What to plant this week</a>
+        <a class="btn secondary" id="calLink" href="../charts/planting-calendar.html">Planting calendar</a>
+        <a class="btn secondary" id="planLink" href="../plan.html">Open the planner</a>
+      </p>
+    </div>
+
+    <section class="prose">
+      <h2>What these dates mean</h2>
+      <p>The date is the 50% NOAA climate normal at the nearest station with both 32°F dates within 80 km of the ZIP’s Census point. “50%” means that in the 1991–2020 period, a 32°F reading had happened by that date in about half of the years. A later spring frost, or an earlier fall frost, still happens in the other half. A USDA zone is a winter-low band, not a frost date, so two places in the same zone can have different dates.</p>
+      <p>A short guide on <a href="../guides/frost-date.html">how to use your frost date</a> explains how extension planting windows count from it. Once you have a date, you can see <a href="../charts/what-to-plant.html">what to plant this week</a>, open the <a href="../charts/planting-calendar.html">planting calendar</a>, or <a href="../plan.html">plan a bed</a>.</p>
+      <p class="muted source">Sources: <a href="https://www.ncei.noaa.gov/products/land-based-station/us-climate-normals">NOAA NCEI U.S. Climate Normals 1991–2020</a>, last spring and first fall 32°F dates at 50% probability; <a href="https://prism.oregonstate.edu/phzm">2023 USDA Plant Hardiness Zone Map ZIP listings</a> (PRISM Group, Oregon State University). Census 2024 ZCTA points place each ZIP. More detail is in <a href="../SOURCES.md">SOURCES.md</a>.</p>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <div class="footer-brand"><strong>Bloom &amp; Bed Garden</strong><span>A free garden bed planner, with planting dates from extension guides and NOAA normals.</span></div>
+    <nav class="nav" aria-label="Footer">
+      <a href="../zones/">Zones</a>
+      <a href="../plants/">Plants</a>
+      <a href="../about.html">About</a>
+      <a href="../plus.html">Plus</a>
+      <a href="../privacy.html">Privacy</a>
+      <a href="../terms.html">Terms</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+  </footer>
+  <script src="../data/charts/lookup.js"></script>
+  <script src="../js/charts.js"></script>
+  <script>
+    (function () {
+      var lookup = window.YardLookup;
+      var zipEl = document.getElementById('zip');
+      var status = document.getElementById('status');
+      var results = document.getElementById('results');
+      var lastEl = document.getElementById('lastDate');
+      var firstEl = document.getElementById('firstDate');
+      var seasonEl = document.getElementById('seasonLen');
+      var placeNote = document.getElementById('placeNote');
+      var caveat = document.getElementById('caveat');
+      var weekLink = document.getElementById('weekLink');
+      var calLink = document.getElementById('calLink');
+      var planLink = document.getElementById('planLink');
+
+      function tagText(tag) {
+        return tag ? ' (' + tag + ')' : '';
+      }
+
+      function remember(place) {
+        if (!place) return;
+        var year = YardCharts.planYear();
+        var rec = {
+          zone: place.zone,
+          zip: place.zip || '',
+          frost: place.last ? YardCharts.iso(place.last, year) : '',
+          first: place.first ? YardCharts.iso(place.first, year) : '',
+          station: place.station || '',
+          stationName: place.stationName || '',
+          km: place.km == null ? '' : place.km,
+          basis: place.basis,
+          n: place.n || 0
+        };
+        try { localStorage.setItem('yardgrid-zone', JSON.stringify(rec)); } catch (e) {}
+      }
+
+      function show(place) {
+        status.textContent = '';
+        results.hidden = false;
+        placeNote.textContent = YardCharts.placeText(place);
+        var q = '?zip=' + encodeURIComponent(place.zip);
+        weekLink.href = '../charts/what-to-plant.html' + q;
+        calLink.href = '../charts/planting-calendar.html' + q;
+        var year = YardCharts.planYear();
+        if (place.last) {
+          var span = YardCharts.frostSpan(place.last, place.first);
+          lastEl.textContent = span.lastText + tagText(span.lastTag);
+          firstEl.textContent = span.firstText + tagText(span.firstTag);
+          seasonEl.textContent = span.days + ' days between the average dates';
+          planLink.href = '../plan.html?frost=' + encodeURIComponent(YardCharts.iso(place.last, year));
+          caveat.hidden = false;
+        } else {
+          lastEl.textContent = 'No date nearby';
+          firstEl.textContent = 'No date nearby';
+          seasonEl.textContent = 'Not listed for this ZIP';
+          planLink.href = '../plan.html';
+          caveat.hidden = true;
+        }
+        remember(place);
+      }
+
+      function lookupZip(raw) {
+        var zip = String(raw || '').replace(/\D/g, '');
+        if (zip.length === 4) zip = '0' + zip;
+        zipEl.value = zip;
+        if (zip.length !== 5) {
+          status.textContent = 'Enter a 5-digit US ZIP code.';
+          results.hidden = true;
+          return;
+        }
+        var place = YardCharts.zipPlace(lookup, zip);
+        if (!place) {
+          status.textContent = 'That ZIP is not in the 2023 USDA ZIP listing used here.';
+          results.hidden = true;
+          return;
+        }
+        show(place);
+      }
+
+      document.getElementById('frostForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        lookupZip(zipEl.value);
+      });
+
+      var q = new URLSearchParams(location.search);
+      if (q.get('zip')) lookupZip(q.get('zip'));
+      else {
+        var saved = null;
+        try { saved = JSON.parse(localStorage.getItem('yardgrid-zone') || 'null'); } catch (e) {}
+        if (saved && saved.zip) {
+          zipEl.value = saved.zip;
+          lookupZip(saved.zip);
+        }
+      }
+    })();
+  </script>
+  <script src="../js/account.js"></script>
+</body>
+</html>
