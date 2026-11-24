@@ -44,8 +44,8 @@
     <p id="status" class="note"></p>
     <p class="muted">Dates are averages. Local weather varies, and soil temperature is a better planting signal when you have it. A zone is a winter-low band, not a frost date. ZIP frost dates use the nearest NOAA station within 80 km. A zone with no ZIP uses the median of contiguous-US stations matched to that zone.</p>
     <div id="chart"></div>
-    <p class="muted">Each zone also has its own page with frost dates and a planting table: <a href="../zones/">planting calendars by zone</a>. Spacing and timing for each plant: <a href="../plants/">plant pages</a>.</p>
-    <p><a class="btn" id="use" href="../plan.html">Use these dates in the planner</a> <a class="btn secondary" id="printLink" href="checklist.html">Printable checklist</a></p>
+    <p class="muted">Each zone also has its own page with frost dates and a planting table: <a href="../zones/">planting calendars by zone</a>. Spacing and timing for each plant: <a href="../plants/">plant pages</a>. For the frost dates alone, use the <a href="../tools/frost-dates.html">frost dates by ZIP code</a> tool.</p>
+    <p><a class="btn" id="use" href="../plan.html">Use these dates in the planner</a> <a class="btn secondary" id="frostLink" href="../tools/frost-dates.html">Frost dates by ZIP code</a> <a class="btn secondary" id="printLink" href="checklist.html">Printable checklist</a></p>
     <p class="muted">Sources: <a href="https://prism.oregonstate.edu/phzm">2023 USDA zone ZIP listings</a> (PRISM Group, Oregon State University), <a href="https://www.ncei.noaa.gov/products/land-based-station/us-climate-normals">NOAA 1991–2020 Climate Normals</a>, and the extension windows in <a href="../SOURCES.md">SOURCES.md</a>. Census 2024 ZCTA points place each ZIP.</p>
   </main>
   <footer class="site-footer">
@@ -91,6 +91,8 @@
         try { localStorage.setItem('yardgrid-zone', JSON.stringify(rec)); } catch (e) {}
         document.getElementById('use').href = '../plan.html?zone=' + encodeURIComponent(place.zone) + '&frost=' + encodeURIComponent(frost);
         document.getElementById('printLink').href = 'checklist.html?zone=' + encodeURIComponent(place.zone) + (place.zip ? '&zip=' + encodeURIComponent(place.zip) : '');
+        var frostLink = document.getElementById('frostLink');
+        if (frostLink) frostLink.href = '../tools/frost-dates.html' + (place.zip ? '?zip=' + encodeURIComponent(place.zip) : '');
       }
       function draw() {
         status.textContent = YardCharts.placeText(place);

@@ -247,6 +247,29 @@
       '<p class="cal-hint">Pick a plant name to open the planner with these dates.</p>';
   }
 
+  /* Days between the average last spring and first fall 32°F dates.
+     First-frost dates in Jan–Jun are counted in the next winter, same as zone medians. */
+  function frostSpan(lastMmdd, firstMmdd) {
+    var a = lastDay(lastMmdd);
+    var b = firstDay(firstMmdd);
+    if (a == null || b == null) return null;
+    var last = wrapDay(a);
+    var first = wrapDay(b);
+    return {
+      days: b - a,
+      last: last.mmdd,
+      first: first.mmdd,
+      lastText: pretty(last.mmdd),
+      firstText: pretty(first.mmdd),
+      lastTag: last.tag,
+      firstTag: first.tag
+    };
+  }
+  function seasonDays(lastMmdd, firstMmdd) {
+    var span = frostSpan(lastMmdd, firstMmdd);
+    return span ? span.days : null;
+  }
+
   return {
     esc: esc,
     zoneRank: zoneRank,
@@ -261,6 +284,8 @@
     planYear: planYear,
     pretty: pretty,
     placeText: placeText,
+    frostSpan: frostSpan,
+    seasonDays: seasonDays,
     plantingHtml: plantingHtml
   };
 });
