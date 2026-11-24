@@ -166,6 +166,7 @@
 
   function persist() {
     if (state.demo || state.viewOnly) return;
+    noteEdit();
     const data = JSON.parse(JSON.stringify(state));
     delete data.demo;
     try { localStorage.setItem('yardgrid-current', JSON.stringify(data)); }
@@ -248,6 +249,29 @@
   }
   function writeSaves(list) {
     localStorage.setItem('yardgrid-saves', JSON.stringify(list));
+  }
+  var editStarted = 0;
+  var keepTimer = 0;
+  function noteEdit() {
+    if (state.demo || state.viewOnly) return;
+    if (!editStarted) {
+      editStarted = Date.now();
+      if (!keepTimer) keepTimer = setInterval(updateKeepUi, 5000);
+    }
+  }
+  function updateKeepUi() {
+    var slots = window.SaveSlots;
+    if (!slots) return;
+    var openBox = $('openSavedBox');
+    if (openBox) openBox.hidden = !slots.shouldShowOpenSaved({ savedCount: namedSaves().length });
+    var keep = $('keepGarden');
+    if (!keep) return;
+    keep.hidden = !slots.shouldShowKeepPanel({
+      plantCount: slots.plantCount(state),
+      editMs: editStarted ? Date.now() - editStarted : 0,
+      viewOnly: !!state.viewOnly,
+      demo: !!state.demo
+    });
   }
 
   function feetFromEvent(e) {
@@ -622,6 +646,7 @@
     renderLibrary();
     renderBoard();
     renderSide();
+    updateKeepUi();
   }
 
   function place(bed, c, r, plantId) {
@@ -1684,6 +1709,18 @@
     $('exportBtn').addEventListener('click', exportGarden);
     $('importFile').addEventListener('change', function (e) { if (e.target.files[0]) importGarden(e.target.files[0]); e.target.value = ''; });
     $('printBtn').addEventListener('click', function () { renderPrint(); window.print(); });
+    if ($('keepSave')) $('keepSave').addEventListener('click', saveNamed);
+    if ($('keepImage')) $('keepImage').addEventListener('click', function () { saveMockup(); });
+    if ($('keepPrint')) $('keepPrint').addEventListener('click', function () { renderPrint(); window.print(); });
+    if ($('openSavedBtn')) $('openSavedBtn').addEventListener('click', function () {
+      var list = namedSaves();
+      var saveList = $('saveList');
+      if (saveList) {
+        saveList.focus();
+        if (saveList.scrollIntoView) saveList.scrollIntoView({ block: 'nearest' });
+      }
+      if (list.length === 1) loadNamed();
+    });
     document.querySelectorAll('.tabs button').forEach(function (btn) {
       btn.addEventListener('click', function () {
         document.querySelectorAll('.tabs button').forEach(function (b) { b.classList.toggle('on', b === btn); });

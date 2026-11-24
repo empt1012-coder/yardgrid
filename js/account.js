@@ -157,6 +157,7 @@
       if ($('plusYearly')) $('plusYearly').hidden = !!isPlus;
     }
     if ($('plusManage')) $('plusManage').hidden = !isPlus;
+    if ($('plusPortal')) $('plusPortal').hidden = !isPlus;
   }
   function userEmail(data) {
     return (data && (data.email || (data.user && data.user.email))) || '';

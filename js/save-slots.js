@@ -28,5 +28,22 @@
     var kind = row.kind === 'arrangement' ? 'Arrangement' : (row.kind === 'plan' ? 'Garden plan' : 'Earlier save');
     return kind + ': ' + (row.name || 'Untitled');
   }
-  return { applySave: applySave, label: label };
+  function plantCount(state) {
+    if (!state) return 0;
+    var n = 0;
+    if (Array.isArray(state.plants)) n += state.plants.length;
+    if (Array.isArray(state.pieces)) n += state.pieces.length;
+    return n;
+  }
+  /* Show the save/share reminder after a few plants are placed, or after a short stretch of editing. */
+  function shouldShowKeepPanel(opts) {
+    opts = opts || {};
+    if (opts.viewOnly || opts.demo) return false;
+    return (opts.plantCount || 0) >= 3 || (opts.editMs || 0) >= 45000;
+  }
+  function shouldShowOpenSaved(opts) {
+    opts = opts || {};
+    return (opts.savedCount || 0) > 0;
+  }
+  return { applySave: applySave, label: label, plantCount: plantCount, shouldShowKeepPanel: shouldShowKeepPanel, shouldShowOpenSaved: shouldShowOpenSaved };
 });

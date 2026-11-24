@@ -119,8 +119,16 @@ Flowers with no bloom month on these pages are not on the chart.
 
 ### Monthly tasks
 
-- University of Minnesota Extension. “Upper Midwest home garden care schedule.” Reviewed in 2026. The months are for the upper Midwest. They are not rewritten by zone.
+- University of Minnesota Extension. “Upper Midwest home garden care schedule.” Reviewed in 2026. The months are for the upper Midwest. They are not rewritten by zone. December, January, and February are not listed on that calendar.
   https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/upper-midwest-home-garden-care-calendar
+
+- Penn State Extension, Dauphin County Master Gardener. “Seasonal Garden Tips,” written for USDA zone 6. January and February pages are used on the month to-do lists. The series has no December page.
+  https://extension.psu.edu/programs/master-gardener/counties/dauphin/seasonal-garden-tips
+  https://extension.psu.edu/programs/master-gardener/counties/dauphin/seasonal-garden-tips/january
+  https://extension.psu.edu/programs/master-gardener/counties/dauphin/seasonal-garden-tips/february
+
+- UF/IFAS Gardening Solutions. “Edibles to Plant in Florida” (text version of what to plant by month). December, January, and February lists for North, Central, and South Florida, as defined by State Roads 40 and 70. These are Florida regional lists, not a rewrite of every USDA zone in 8–13.
+  https://gardeningsolutions.ifas.ufl.edu/infographics-collection/text-version-of-what-to-plant-by-month/
 
 No sourced “grows well together” companion pair was added. The marigold and bean notes above are the whole companion chart.
 
@@ -132,7 +140,7 @@ The pictures in `images/library/` are generated for this site. They are not phot
 
 `zones/` and `plants/` are built by `scripts/build-pages.mjs` from `data/charts/lookup.js`, `js/plants.js`, and `js/logic.js`. Run `node scripts/build-pages.mjs` after changing any of them; `tests/pages.test.js` fails if the pages are stale.
 
-- Zone medians use only stations in the contiguous 48 states and DC. Alaska stations carry zones as warm as 7a, so they are left out of these pages.
+- Zone medians use only stations in the contiguous 48 states and DC, except zones 1a–2b, which have no contiguous-US stations and use Alaska stations instead. Alaska stations in warmer zones are still left out, because they can sit in very different climates from the rest of that zone. Zones 11a–13b are omitted; the method does not give a usable zone-wide frost date for them.
 - A last-frost date in August to December is counted as the winter before, and a first-frost date in January to June as the winter after, so zone 9b to 10b medians do not wrap across New Year.
 - The "middle half" range is the 25th to 75th percentile of station dates. Zones with fewer than 10 stations show the full range instead.
 - Planting dates use the same frost offsets as the planner, counted from the zone median. Plant pages repeat the notes and sources already on each plant record.
